@@ -28,29 +28,29 @@
             background: linear-gradient(135deg, #4c6ef5 0%, #3b5bdb 100%);
             color: white;
             text-align: center;
-            padding: 3.5rem 1rem;
+            padding: 4rem 1rem;
             border-bottom-left-radius: 20px;
             border-bottom-right-radius: 20px;
             box-shadow: 0 4px 15px rgba(59, 91, 219, 0.15);
-            margin-bottom: 3rem;
+            margin-bottom: 3.5rem;
         }
 
         header h1 {
             margin: 0;
-            font-size: 2.2rem;
+            font-size: 2.4rem;
             font-weight: 700;
             letter-spacing: -0.5px;
         }
 
         header p {
-            margin: 1rem 0 0 0;
-            font-size: 1.1rem;
+            margin: 1.2rem 0 0 0;
+            font-size: 1.15rem;
             opacity: 0.9;
             font-weight: 300;
         }
 
         .container {
-            max-width: 960px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 0 1.5rem;
         }
@@ -59,7 +59,7 @@
             display: flex;
             align-items: center;
             color: var(--primary-color);
-            font-size: 1.3rem;
+            font-size: 1.4rem;
             font-weight: 700;
             margin-bottom: 1.5rem;
             padding-bottom: 0.5rem;
@@ -67,15 +67,15 @@
         }
 
         .section-title span {
-            margin-right: 8px;
-            font-size: 1.4rem;
+            margin-right: 10px;
+            font-size: 1.5rem;
         }
 
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 4rem;
+            gap: 1.8rem;
+            margin-bottom: 4.5rem;
         }
 
         .card {
@@ -83,7 +83,7 @@
             border-radius: 12px;
             border: 1px solid #e9ecef;
             box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-            padding: 1.8rem;
+            padding: 2rem;
             transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
             display: flex;
             flex-direction: column;
@@ -97,36 +97,43 @@
         }
 
         .tag-group {
-            margin-bottom: 1rem;
+            margin-bottom: 1.2rem;
         }
 
         .tag {
             display: inline-block;
             background: var(--secondary-color);
             color: var(--primary-color);
-            padding: 0.3rem 0.6rem;
+            padding: 0.35rem 0.7rem;
             border-radius: 6px;
             font-size: 0.85rem;
             font-weight: 600;
+            margin-right: 0.3rem;
         }
 
         .tag-math {
             background: #f3f0ff;
             color: #845ef7;
         }
+        
+        .tag-data {
+            background: #e6fcf5;
+            color: #0ca678;
+        }
 
         .card h3 {
-            margin: 0 0 0.8rem 0;
+            margin: 0 0 1rem 0;
             color: #212529;
-            font-size: 1.25rem;
+            font-size: 1.3rem;
             font-weight: 700;
+            line-height: 1.4;
         }
 
         .card p {
             color: var(--text-muted);
-            font-size: 0.95rem;
+            font-size: 1rem;
             flex-grow: 1;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.8rem;
         }
 
         .btn {
@@ -134,7 +141,7 @@
             background-color: #f8f9fa;
             color: #495057;
             text-decoration: none;
-            padding: 0.8rem;
+            padding: 0.9rem;
             border-radius: 8px;
             text-align: center;
             font-weight: 600;
@@ -148,24 +155,35 @@
             color: white;
             border-color: var(--primary-color);
         }
+
+        /* 꼬리말 추가 */
+        footer {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #868e96;
+            font-size: 0.9rem;
+            border-top: 1px solid #e9ecef;
+            margin-top: 2rem;
+        }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>교육 업무 및 수학 수업 도구 모음</h1>
-        <p>수업과 학교 행정의 효율성을 높이기 위해 제작한 웹앱 포트폴리오입니다.</p>
+        <h1>수학과 교사 김대희의 에듀테크 포트폴리오</h1>
+        <p>수업의 질을 높이고 학교 행정의 효율성을 극대화하기 위해 직접 개발한 도구 모음입니다.</p>
     </header>
 
     <div class="container">
-        <h2 class="section-title"><span>📊</span> 학교 행정 자동화 도구</h2>
+        <h2 class="section-title"><span>📊</span> 학교 행정 & 교육과정 지원 도구</h2>
         <div class="grid">
             <div class="card">
                 <div class="tag-group">
                     <span class="tag">Google Apps Script</span>
+                    <span class="tag">API</span>
                 </div>
                 <h3>학사일정 & 급식 자동화 시스템</h3>
-                <p>나이스(NEIS) API를 연동하여 학교 급식표 및 학사일정을 구글 스프레드시트와 자동으로 동기화하는 스크립트입니다.</p>
+                <p>나이스(NEIS) API를 연동하여 학교 급식표 및 학사일정을 구글 스프레드시트와 자동으로 동기화하는 업무 경감 스크립트입니다.</p>
                 <a href="#" target="_blank" class="btn">웹앱 실행하기</a>
             </div>
             
@@ -177,9 +195,18 @@
                 <p>정기고사 시간표 작성 시, 교사별 감독 배정 오차 및 겹침 여부를 클릭 한 번으로 검증하는 엑셀 매크로 도구입니다.</p>
                 <a href="#" class="btn">파일 다운로드</a>
             </div>
+
+            <div class="card">
+                <div class="tag-group">
+                    <span class="tag">Web App</span>
+                </div>
+                <h3>고교학점제 교육과정 편성 지원</h3>
+                <p>지역 학교 교육과정 컨설팅 경험을 바탕으로, 고교학점제 단위 배당 및 선택 과목 편성을 시각적으로 점검할 수 있는 도구입니다.</p>
+                <a href="#" target="_blank" class="btn">웹앱 실행하기</a>
+            </div>
         </div>
 
-        <h2 class="section-title"><span>📐</span> 수학 수업 활용 도구</h2>
+        <h2 class="section-title"><span>📐</span> 수학 수업 활용 웹앱 및 교구</h2>
         <div class="grid">
             <div class="card">
                 <div class="tag-group">
@@ -187,7 +214,26 @@
                 </div>
                 <h3>수열의 귀납적 정의 시각화</h3>
                 <p>데스모스 연산 레이어(CL)를 활용해 학생들이 수열의 변화 양상을 직관적으로 관찰할 수 있도록 돕는 그래프 교구입니다.</p>
-                <a href="#" target="_blank" class="btn">웹앱 실행하기</a>
+                <a href="#" target="_blank" class="btn">교구 살펴보기</a>
+            </div>
+
+            <div class="card">
+                <div class="tag-group">
+                    <span class="tag tag-data">Data Analysis</span>
+                    <span class="tag tag-math">Math</span>
+                </div>
+                <h3>실물 경제 기반 등비수열 모델링</h3>
+                <p>닷컴 버블, 서브프라임 모기지 사태 등 실제 역사적 금융 데이터를 활용하여 등비수열의 개념을 직관적으로 이해하는 수업 자료입니다.</p>
+                <a href="#" target="_blank" class="btn">수업 자료 보기</a>
+            </div>
+
+            <div class="card">
+                <div class="tag-group">
+                    <span class="tag tag-math">Infographic</span>
+                </div>
+                <h3>학생 도서 선택 확률 분석 시각화</h3>
+                <p>학생들이 특정 도서(도서 D)를 선택할 조건부 확률 등 실생활에 밀접한 통계 데이터를 미니멀한 인포그래픽으로 구현했습니다.</p>
+                <a href="#" target="_blank" class="btn">인포그래픽 보기</a>
             </div>
 
             <div class="card">
@@ -195,11 +241,15 @@
                     <span class="tag tag-math">React</span>
                 </div>
                 <h3>SET 카드 게임 웹 애플리케이션</h3>
-                <p>수학적 논리력과 결합 기하학적 개념을 익힐 수 있는 보드게임 'SET'을 온라인에서 구동할 수 있도록 구현한 앱입니다.</p>
+                <p>수학적 논리력과 결합 기하학적 개념을 익힐 수 있는 보드게임 'SET'의 논리 구조를 완벽하게 온라인으로 이식한 앱입니다.</p>
                 <a href="#" target="_blank" class="btn">웹앱 실행하기</a>
             </div>
         </div>
     </div>
+
+    <footer>
+        © 2026. 선생님의 지속적인 연구와 개발을 응원합니다.
+    </footer>
 
 </body>
 </html>
