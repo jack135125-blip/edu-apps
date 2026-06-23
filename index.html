@@ -3,131 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>교사를 위한 웹앱 & 수학 교구 모음 visual-style</title>
+    <title>선생님의 마법 상자 🎁</title>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #4a6fa5;
-            --bg-color: #f8f9fa;
-            --card-bg: #ffffff;
-            --text-color: #333333;
+            --primary-color: #ff9a9e; /* 파스텔 핑크 */
+            --secondary-color: #fecfef; /* 연한 핑크 */
+            --accent-color: #a1c4fd; /* 파스텔 블루 */
+            --bg-color: #fffbfb;
+            --text-color: #555555;
         }
+        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Jua', sans-serif; /* 귀여운 폰트 적용 */
             background-color: var(--bg-color);
+            /* 은은한 도트 패턴 배경 */
+            background-image: radial-gradient(var(--secondary-color) 2px, transparent 2px);
+            background-size: 30px 30px;
             color: var(--text-color);
             margin: 0;
             padding: 0;
             line-height: 1.6;
         }
+
         header {
-            background-color: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             color: white;
             text-align: center;
-            padding: 2.5rem 1rem;
+            padding: 3rem 1rem;
+            border-bottom-left-radius: 50px;
+            border-bottom-right-radius: 50px;
+            box-shadow: 0 4px 15px rgba(255, 154, 158, 0.3);
+            margin-bottom: 2rem;
         }
-        header h1 { margin: 0; font-size: 2rem; }
-        header p { margin: 0.5rem 0 0 0; opacity: 0.9; }
+
+        header h1 { 
+            margin: 0; 
+            font-size: 2.5rem; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header p { 
+            margin: 0.8rem 0 0 0; 
+            font-size: 1.2rem;
+        }
         
         .container {
-            max-width: 1000px;
-            margin: 2rem auto;
+            max-width: 900px;
+            margin: 0 auto;
             padding: 0 1rem;
         }
+
         .section-title {
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 0.5rem;
-            color: var(--primary-color);
+            text-align: center;
+            color: #ff758c;
+            background-color: white;
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            border-radius: 30px;
+            border: 2px dashed #ff9a9e;
+            margin: 2rem auto 1.5rem auto;
+            position: relative;
+            left: 50%;
+            transform: translateX(-50%);
         }
+
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 3rem;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
         }
+
         .card {
-            background: var(--card-bg);
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            padding: 1.5rem;
-            transition: transform 0.2s;
+            background: white;
+            border-radius: 25px;
+            border: 3px solid #fff0f0;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.03);
+            padding: 1.8rem;
+            transition: all 0.3s ease;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            position: relative;
         }
-        .card:hover { transform: translateY(-5px); }
-        .card h3 { margin-top: 0; color: #2c3e50; }
-        .card p { color: #666; font-size: 0.95rem; flex-grow: 1; }
+
+        /* 통통 튀는 호버 효과 */
+        .card:hover { 
+            transform: translateY(-10px) scale(1.02); 
+            box-shadow: 0 15px 25px rgba(255, 154, 158, 0.2);
+            border-color: var(--primary-color);
+        }
+
+        .card h3 { 
+            margin-top: 0.5rem; 
+            color: #ff758c; 
+            font-size: 1.4rem;
+        }
+
+        .card p { 
+            color: #777; 
+            font-size: 1.1rem; 
+            flex-grow: 1; 
+        }
+
         .tag {
             display: inline-block;
-            background: #eef2f7;
-            color: var(--primary-color);
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: bold;
+            background: #e2f0cb; /* 파스텔 그린 */
+            color: #558b2f;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
             margin-bottom: 0.5rem;
         }
+
+        /* 두 번째 섹션의 태그 색상 다르게 */
+        .tag-math {
+            background: #e1bee7; /* 파스텔 퍼플 */
+            color: #6a1b9a;
+        }
+
         .btn {
-            display: inline-block;
-            background-color: var(--primary-color);
+            display: block;
+            background-color: var(--accent-color);
             color: white;
             text-decoration: none;
-            padding: 0.6rem 1rem;
-            border-radius: 4px;
+            padding: 0.8rem;
+            border-radius: 20px;
             text-align: center;
-            font-weight: bold;
-            font-size: 0.9rem;
+            font-size: 1.1rem;
+            margin-top: 1rem;
+            transition: background-color 0.2s;
         }
-        .btn:hover { background-color: #3b5984; }
+
+        .btn:hover { 
+            background-color: #8db5f8; 
+        }
+        
+        /* 둥둥 떠다니는 이모지 장식 */
+        .deco {
+            position: absolute;
+            font-size: 2rem;
+            opacity: 0.8;
+            top: -15px;
+            right: -10px;
+            transform: rotate(15deg);
+        }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>💡 교사용 업무 Tool & 수학 웹앱 모음</h1>
-        <p>수업과 학급 경영을 더 편리하게 만드는 유용한 도구들을 모아둔 공간입니다.</p>
+        <h1>🎀 선생님의 비밀 도구 상자 🎀</h1>
+        <p>수업은 더 재밌게, 업무는 더 빠르게 만들어주는 마법 같은 웹앱 모음</p>
     </header>
 
     <div class="container">
-        <h2 class="section-title">🛠️ 학교 업무 및 행정 자동화</h2>
+        <h2 class="section-title">🏫 뚝딱뚝딱 학교 업무</h2>
         <div class="grid">
             <div class="card">
+                <div class="deco">🍱</div>
                 <div>
                     <span class="tag">Google Apps Script</span>
-                    <h3>학사일정 & 급식 자동 동기화</h3>
-                    <p>나이스(NEIS) API를 연동하여 학교 급식 및 학사일정을 구글 스프레드시트에 자동으로 반영하는 도구입니다.</p>
+                    <h3>학사일정 & 급식 알리미</h3>
+                    <p>나이스(NEIS) 정보를 쏙쏙 뽑아와서 구글 시트에 자동으로 정리해 주는 아주 똑똑한 도구랍니다!</p>
                 </div>
-                <a href="#" target="_blank" class="btn">바로가기</a>
+                <a href="#" target="_blank" class="btn">구경 가기 슝슝 🚀</a>
             </div>
             
             <div class="card">
+                <div class="deco">👀</div>
                 <div>
                     <span class="tag">Excel VBA</span>
-                    <h3>교사 감독 중복 점검 매크로</h3>
-                    <p>고사 시간표 작성 시 교사별 감독 배정 오차 및 중복 여부를 원클릭으로 검증하는 프로그램입니다.</p>
+                    <h3>고사 감독 겹침 방지기</h3>
+                    <p>선생님들 시험 감독 시간표 짤 때 중복되는 곳은 없는지 1초 만에 확인해 주는 매크로예요.</p>
                 </div>
-                <a href="#" target="_blank" class="btn">바로가기</a>
+                <a href="#" target="_blank" class="btn">구경 가기 슝슝 🚀</a>
             </div>
         </div>
 
-        <h2 class="section-title">📐 수학 수업 활용 웹앱</h2>
+        <h2 class="section-title">📐 말랑말랑 수학 수업</h2>
         <div class="grid">
             <div class="card">
+                <div class="deco">✨</div>
                 <div>
-                    <span class="tag">Desmos CL</span>
-                    <h3>수열의 귀납적 정의 시각화</h3>
-                    <p>데스모스 연산 레이어(CL)를 활용하여 학생들이 수열의 변화를 직관적으로 관찰할 수 있는 그래프 교구입니다.</p>
+                    <span class="tag tag-math">Desmos CL</span>
+                    <h3>수열의 변화 한눈에 보기</h3>
+                    <p>데스모스를 활용해 학생들이 귀납적 정의를 눈으로 직접 보며 재미있게 익힐 수 있는 그래프 교구입니다.</p>
                 </div>
-                <a href="#" target="_blank" class="btn">바로가기</a>
+                <a href="#" target="_blank" class="btn">구경 가기 슝슝 🚀</a>
             </div>
 
             <div class="card">
+                <div class="deco">🃏</div>
                 <div>
-                    <span class="tag">React</span>
-                    <h3>SET 카드 게임 웹 애플리케이션</h3>
-                    <p>수학적 논리력과 결합 기하학적 개념을 익힐 수 있는 보드게임 'SET'을 온라인에서 즐길 수 있는 앱입니다.</p>
+                    <span class="tag tag-math">React</span>
+                    <h3>SET 카드 게임 보드판</h3>
+                    <p>수학적 논리력과 기하학적 감각을 동시에 키울 수 있는 신나는 세트(SET) 게임을 웹에서 즐겨보세요!</p>
                 </div>
-                <a href="#" target="_blank" class="btn">바로가기</a>
+                <a href="#" target="_blank" class="btn">구경 가기 슝슝 🚀</a>
             </div>
         </div>
     </div>
