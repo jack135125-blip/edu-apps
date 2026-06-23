@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>교사를 위한 웹앱 & 수학 교구 모음 visual-style</title>
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            padding: 2.5rem 1rem;
+        }
+        header h1 { margin: 0; font-size: 2rem; }
+        header p { margin: 0.5rem 0 0 0; opacity: 0.9; }
+        
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .section-title {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            padding: 1.5rem;
+            transition: transform 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .card:hover { transform: translateY(-5px); }
+        .card h3 { margin-top: 0; color: #2c3e50; }
+        .card p { color: #666; font-size: 0.95rem; flex-grow: 1; }
+        .tag {
+            display: inline-block;
+            background: #eef2f7;
+            color: var(--primary-color);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            padding: 0.6rem 1rem;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        .btn:hover { background-color: #3b5984; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>💡 교사용 업무 Tool & 수학 웹앱 모음</h1>
+        <p>수업과 학급 경영을 더 편리하게 만드는 유용한 도구들을 모아둔 공간입니다.</p>
+    </header>
+
+    <div class="container">
+        <h2 class="section-title">🛠️ 학교 업무 및 행정 자동화</h2>
+        <div class="grid">
+            <div class="card">
+                <div>
+                    <span class="tag">Google Apps Script</span>
+                    <h3>학사일정 & 급식 자동 동기화</h3>
+                    <p>나이스(NEIS) API를 연동하여 학교 급식 및 학사일정을 구글 스프레드시트에 자동으로 반영하는 도구입니다.</p>
+                </div>
+                <a href="#" target="_blank" class="btn">바로가기</a>
+            </div>
+            
+            <div class="card">
+                <div>
+                    <span class="tag">Excel VBA</span>
+                    <h3>교사 감독 중복 점검 매크로</h3>
+                    <p>고사 시간표 작성 시 교사별 감독 배정 오차 및 중복 여부를 원클릭으로 검증하는 프로그램입니다.</p>
+                </div>
+                <a href="#" target="_blank" class="btn">바로가기</a>
+            </div>
+        </div>
+
+        <h2 class="section-title">📐 수학 수업 활용 웹앱</h2>
+        <div class="grid">
+            <div class="card">
+                <div>
+                    <span class="tag">Desmos CL</span>
+                    <h3>수열의 귀납적 정의 시각화</h3>
+                    <p>데스모스 연산 레이어(CL)를 활용하여 학생들이 수열의 변화를 직관적으로 관찰할 수 있는 그래프 교구입니다.</p>
+                </div>
+                <a href="#" target="_blank" class="btn">바로가기</a>
+            </div>
+
+            <div class="card">
+                <div>
+                    <span class="tag">React</span>
+                    <h3>SET 카드 게임 웹 애플리케이션</h3>
+                    <p>수학적 논리력과 결합 기하학적 개념을 익힐 수 있는 보드게임 'SET'을 온라인에서 즐길 수 있는 앱입니다.</p>
+                </div>
+                <a href="#" target="_blank" class="btn">바로가기</a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
