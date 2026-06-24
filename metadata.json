@@ -1,0 +1,6 @@
+{
+  "name": "WebTool 모음",
+  "description": "학교 수업 및 업무에 유용한 AI 및 교육 웹툴 모음 서비스",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
