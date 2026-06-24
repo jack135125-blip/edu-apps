@@ -5,6 +5,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    base: '/edu-apps/', // GitHub Pages URL이 https://jack135125-blip.github.io/edu-apps/ 이므로 레포지토리 이름인 /edu-apps/를 입력합니다.
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
