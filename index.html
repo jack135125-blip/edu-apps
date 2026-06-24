@@ -1,255 +1,659 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>교육 업무 및 수학 수업 도구 모음</title>
-    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #3b5bdb; /* 신뢰감 있는 블루 */
-            --secondary-color: #edf2ff; /* 연한 블루 배경 */
-            --text-main: #343a40;
-            --text-muted: #495057;
-            --bg-color: #f8f9fa;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebTool 모음 — 수업 &amp; 업무용 웹툴</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Nunito', sans-serif; background: #EFF6FF; color: #1e3a5f; }
 
-        body {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0;
-            padding: 0;
-            line-height: 1.6;
-            word-break: keep-all;
-        }
+    /* NAV */
+    nav { background: #0F1B3C; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 60px; position: sticky; top: 0; z-index: 100; }
+    .logo { font-size: 18px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .logo i { color: #60A5FA; font-size: 22px; }
+    .nav-right { display: flex; align-items: center; gap: 0.75rem; }
+    .nav-links { display: flex; gap: 1.5rem; list-style: none; }
+    .nav-links a { color: #93C5FD; text-decoration: none; font-size: 14px; font-weight: 600; transition: color 0.2s; }
+    .nav-links a:hover { color: #fff; }
+    .btn-edit-nav {
+      background: transparent; color: #93C5FD; border: 1.5px solid #334d80;
+      font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700;
+      padding: 6px 14px; border-radius: 20px; cursor: pointer;
+      display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+    }
+    .btn-edit-nav:hover { background: #1e3a8a; color: #fff; border-color: #3B82F6; }
+    .btn-edit-nav.active { background: #3B82F6; color: #fff; border-color: #3B82F6; }
 
-        header {
-            background: linear-gradient(135deg, #4c6ef5 0%, #3b5bdb 100%);
-            color: white;
-            text-align: center;
-            padding: 4rem 1rem;
-            border-bottom-left-radius: 20px;
-            border-bottom-right-radius: 20px;
-            box-shadow: 0 4px 15px rgba(59, 91, 219, 0.15);
-            margin-bottom: 3.5rem;
-        }
+    /* EDIT MODE BANNER */
+    .edit-banner {
+      display: none; background: #1D4ED8; color: #fff;
+      text-align: center; padding: 8px 1rem; font-size: 13px; font-weight: 700;
+      align-items: center; justify-content: center; gap: 8px;
+    }
+    .edit-banner.show { display: flex; }
+    .edit-banner i { font-size: 16px; }
 
-        header h1 {
-            margin: 0;
-            font-size: 2.4rem;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
+    /* HERO */
+    .hero { background: linear-gradient(135deg, #0F1B3C 0%, #1E3A8A 60%, #1D4ED8 100%); padding: 4rem 2rem 3rem; text-align: center; }
+    .hero-tag { display: inline-block; background: rgba(96,165,250,0.2); color: #93C5FD; font-size: 13px; font-weight: 700; padding: 4px 14px; border-radius: 20px; margin-bottom: 1rem; }
+    .hero h1 { font-size: 36px; font-weight: 800; color: #fff; line-height: 1.3; margin-bottom: 0.75rem; }
+    .hero h1 span { color: #60A5FA; }
+    .hero p { color: #BFDBFE; font-size: 16px; max-width: 520px; margin: 0 auto 2rem; line-height: 1.7; }
+    .search-wrap { display: flex; max-width: 440px; margin: 0 auto; background: #fff; border-radius: 40px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.15); }
+    .search-wrap input { flex: 1; border: none; padding: 12px 20px; font-size: 14px; font-family: 'Nunito', sans-serif; outline: none; color: #1e3a5f; }
+    .search-wrap button { background: #3B82F6; border: none; padding: 12px 20px; cursor: pointer; color: #fff; font-size: 18px; display: flex; align-items: center; transition: background 0.2s; }
+    .search-wrap button:hover { background: #2563EB; }
 
-        header p {
-            margin: 1.2rem 0 0 0;
-            font-size: 1.15rem;
-            opacity: 0.9;
-            font-weight: 300;
-        }
+    /* BODY */
+    .body { padding: 2.5rem 2rem; max-width: 960px; margin: 0 auto; }
+    .stats { display: flex; gap: 1rem; margin-bottom: 2.5rem; flex-wrap: wrap; }
+    .stat { background: #fff; border: 0.5px solid #BFDBFE; border-radius: 12px; padding: 0.75rem 1.25rem; flex: 1; min-width: 120px; text-align: center; }
+    .stat-num { font-size: 24px; font-weight: 800; color: #1D4ED8; }
+    .stat-label { font-size: 12px; color: #64748b; font-weight: 600; margin-top: 2px; }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 0 1.5rem;
-        }
+    /* FILTERS */
+    .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.5rem; align-items: center; }
+    .filter-btn { border: 1.5px solid #BFDBFE; background: #fff; color: #3B82F6; font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; padding: 6px 16px; border-radius: 20px; cursor: pointer; transition: all 0.15s; }
+    .filter-btn:hover, .filter-btn.active { background: #3B82F6; color: #fff; border-color: #3B82F6; }
 
-        .section-title {
-            display: flex;
-            align-items: center;
-            color: var(--primary-color);
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid var(--secondary-color);
-        }
+    /* ADD CARD BUTTON (edit mode) */
+    .btn-add-card {
+      display: none; background: #EFF6FF; border: 1.5px dashed #3B82F6;
+      color: #3B82F6; font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700;
+      padding: 6px 16px; border-radius: 20px; cursor: pointer;
+      align-items: center; gap: 6px; transition: all 0.15s; margin-left: auto;
+    }
+    .btn-add-card:hover { background: #DBEAFE; }
+    body.edit-mode .btn-add-card { display: flex; }
 
-        .section-title span {
-            margin-right: 10px;
-            font-size: 1.5rem;
-        }
+    /* SECTION */
+    .section-title { font-size: 17px; font-weight: 800; color: #0F1B3C; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+    .section-title i { color: #3B82F6; font-size: 20px; }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.8rem;
-            margin-bottom: 4.5rem;
-        }
+    /* GRID */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 2.5rem; }
 
-        .card {
-            background: white;
-            border-radius: 12px;
-            border: 1px solid #e9ecef;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-            padding: 2rem;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
+    /* CARD */
+    .card-wrap { position: relative; }
+    .card {
+      background: #fff; border: 0.5px solid #BFDBFE; border-radius: 14px;
+      padding: 1.1rem 1.25rem; text-decoration: none; display: block;
+      transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+    }
+    .card:hover { transform: translateY(-3px); border-color: #3B82F6; box-shadow: 0 6px 24px rgba(59,130,246,0.15); }
 
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(59, 91, 219, 0.08);
-            border-color: #bac8ff;
-        }
+    /* edit mode: card border */
+    body.edit-mode .card { border-color: #93C5FD; }
+    body.edit-mode .card:hover { transform: none; box-shadow: none; border-color: #3B82F6; }
 
-        .tag-group {
-            margin-bottom: 1.2rem;
-        }
+    /* DELETE BUTTON */
+    .btn-delete {
+      display: none; position: absolute; top: -8px; right: -8px;
+      width: 26px; height: 26px; border-radius: 50%;
+      background: #EF4444; color: #fff; border: 2px solid #fff;
+      cursor: pointer; font-size: 13px;
+      align-items: center; justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.18); transition: background 0.15s; z-index: 2;
+    }
+    .btn-delete:hover { background: #DC2626; }
+    body.edit-mode .btn-delete { display: flex; }
 
-        .tag {
-            display: inline-block;
-            background: var(--secondary-color);
-            color: var(--primary-color);
-            padding: 0.35rem 0.7rem;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-right: 0.3rem;
-        }
+    .card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 0.6rem; }
+    .icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .icon.ai  { background: #EDE9FE; color: #7C3AED; }
+    .icon.edu { background: #DCFCE7; color: #16A34A; }
+    .card-name { font-size: 15px; font-weight: 700; color: #0F1B3C; }
+    .badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 8px; margin-left: auto; flex-shrink: 0; }
+    .badge-free { background: #DCFCE7; color: #15803D; }
+    .badge-paid { background: #FEF3C7; color: #B45309; }
+    .badge-both { background: #EDE9FE; color: #6D28D9; }
+    .card-desc { font-size: 13px; color: #475569; line-height: 1.6; margin-bottom: 0.75rem; }
+    .card-footer { display: flex; align-items: center; justify-content: space-between; }
+    .card-cat { font-size: 11px; font-weight: 700; color: #3B82F6; background: #EFF6FF; padding: 2px 8px; border-radius: 6px; }
+    .card-link { font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 4px; }
+    .card:hover .card-link { color: #3B82F6; }
 
-        .tag-math {
-            background: #f3f0ff;
-            color: #845ef7;
-        }
-        
-        .tag-data {
-            background: #e6fcf5;
-            color: #0ca678;
-        }
+    /* EMPTY STATE */
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #94a3b8; font-size: 15px; display: none; }
+    .empty-state i { font-size: 40px; display: block; margin-bottom: 0.75rem; color: #BFDBFE; }
 
-        .card h3 {
-            margin: 0 0 1rem 0;
-            color: #212529;
-            font-size: 1.3rem;
-            font-weight: 700;
-            line-height: 1.4;
-        }
+    /* FOOTER */
+    footer { background: #0F1B3C; text-align: center; padding: 2rem; color: #60A5FA; font-size: 13px; font-weight: 600; }
 
-        .card p {
-            color: var(--text-muted);
-            font-size: 1rem;
-            flex-grow: 1;
-            margin-bottom: 1.8rem;
-        }
+    /* ── OVERLAY ── */
+    .overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(15,27,60,0.55); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+    .overlay.open { display: flex; }
 
-        .btn {
-            display: block;
-            background-color: #f8f9fa;
-            color: #495057;
-            text-decoration: none;
-            padding: 0.9rem;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.2s;
-            border: 1px solid #dee2e6;
-        }
+    /* ── MODAL ── */
+    .modal { background: #fff; border-radius: 20px; width: 100%; max-width: 460px; margin: 1rem; padding: 2rem; position: relative; box-shadow: 0 20px 60px rgba(15,27,60,0.25); animation: popIn 0.2s ease; }
+    @keyframes popIn { from { transform: scale(0.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .modal-close { position: absolute; top: 1rem; right: 1rem; background: #EFF6FF; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #3B82F6; font-size: 18px; transition: background 0.15s; }
+    .modal-close:hover { background: #BFDBFE; }
+    .modal h2 { font-size: 20px; font-weight: 800; color: #0F1B3C; margin-bottom: 0.35rem; }
+    .modal-sub { font-size: 13px; color: #64748b; margin-bottom: 1.5rem; }
 
-        .btn:hover {
-            background-color: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
+    /* pw screen */
+    .pw-icon { font-size: 40px; color: #3B82F6; display: block; margin-bottom: 0.75rem; }
+    #pwInput { width: 100%; border: 1.5px solid #BFDBFE; border-radius: 10px; padding: 10px 14px; font-size: 15px; font-family: 'Nunito', sans-serif; outline: none; color: #1e3a5f; transition: border-color 0.2s; margin-bottom: 0.5rem; }
+    #pwInput:focus { border-color: #3B82F6; }
+    #pwError { font-size: 12px; color: #EF4444; margin-bottom: 1rem; min-height: 18px; }
+    .btn-pw { width: 100%; background: #3B82F6; color: #fff; border: none; border-radius: 12px; padding: 12px; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; transition: background 0.2s; }
+    .btn-pw:hover { background: #2563EB; }
 
-        /* 꼬리말 추가 */
-        footer {
-            text-align: center;
-            padding: 3rem 1rem;
-            color: #868e96;
-            font-size: 0.9rem;
-            border-top: 1px solid #e9ecef;
-            margin-top: 2rem;
-        }
-    </style>
+    /* form screen */
+    #formScreen { display: none; }
+    .field { margin-bottom: 1.1rem; }
+    .field label { display: block; font-size: 13px; font-weight: 700; color: #0F1B3C; margin-bottom: 5px; }
+    .field label span { color: #EF4444; }
+    .field input, .field select, .field textarea { width: 100%; border: 1.5px solid #BFDBFE; border-radius: 10px; padding: 9px 13px; font-size: 14px; font-family: 'Nunito', sans-serif; outline: none; color: #1e3a5f; transition: border-color 0.2s; background: #fff; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: #3B82F6; }
+    .field textarea { resize: vertical; min-height: 72px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .btn-submit { width: 100%; background: #3B82F6; color: #fff; border: none; border-radius: 12px; padding: 12px; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-submit:hover { background: #2563EB; }
+
+    /* delete confirm */
+    #deleteScreen { display: none; text-align: center; }
+    .delete-icon { font-size: 48px; color: #EF4444; display: block; margin-bottom: 0.75rem; }
+    #deleteScreen h2 { margin-bottom: 0.35rem; }
+    #deleteScreen .del-name { font-weight: 800; color: #1D4ED8; }
+    .btn-row { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+    .btn-cancel { flex: 1; background: #EFF6FF; color: #3B82F6; border: 1.5px solid #BFDBFE; border-radius: 12px; padding: 11px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
+    .btn-cancel:hover { background: #DBEAFE; }
+    .btn-confirm-del { flex: 1; background: #EF4444; color: #fff; border: none; border-radius: 12px; padding: 11px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; cursor: pointer; transition: background 0.15s; }
+    .btn-confirm-del:hover { background: #DC2626; }
+
+    /* success / done screens */
+    .done-screen { display: none; text-align: center; padding: 1rem 0; }
+    .done-icon-add { font-size: 52px; color: #22C55E; display: block; margin-bottom: 0.75rem; }
+    .done-icon-del { font-size: 52px; color: #EF4444; display: block; margin-bottom: 0.75rem; }
+    .done-screen h3 { font-size: 18px; font-weight: 800; color: #0F1B3C; margin-bottom: 0.4rem; }
+    .done-screen p { font-size: 14px; color: #64748b; }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 26px; }
+      .nav-links { display: none; }
+      .field-row { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
 
-    <header>
-        <h1>수학과 교사 김대희의 에듀테크 포트폴리오</h1>
-        <p>수업의 질을 높이고 학교 행정의 효율성을 극대화하기 위해 직접 개발한 도구 모음입니다.</p>
-    </header>
+  <!-- NAV -->
+  <nav>
+    <div class="logo">
+      <i class="ti ti-tools" aria-hidden="true"></i>
+      WebTool 모음
+    </div>
+    <div class="nav-right">
+      <ul class="nav-links">
+        <li><a href="#ai">AI 도구</a></li>
+        <li><a href="#edu">교육 도구</a></li>
+      </ul>
+      <button class="btn-edit-nav" id="btnEditNav" onclick="toggleEditMode()">
+        <i class="ti ti-edit" aria-hidden="true"></i> 도구 편집
+      </button>
+    </div>
+  </nav>
 
-    <div class="container">
-        <h2 class="section-title"><span>📊</span> 학교 행정 & 교육과정 지원 도구</h2>
-        <div class="grid">
-            <div class="card">
-                <div class="tag-group">
-                    <span class="tag">Google Apps Script</span>
-                    <span class="tag">API</span>
-                </div>
-                <h3>학사일정 & 급식 자동화 시스템</h3>
-                <p>나이스(NEIS) API를 연동하여 학교 급식표 및 학사일정을 구글 스프레드시트와 자동으로 동기화하는 업무 경감 스크립트입니다.</p>
-                <a href="#" target="_blank" class="btn">웹앱 실행하기</a>
-            </div>
-            
-            <div class="card">
-                <div class="tag-group">
-                    <span class="tag">Excel VBA</span>
-                </div>
-                <h3>고사 감독 중복 검증기</h3>
-                <p>정기고사 시간표 작성 시, 교사별 감독 배정 오차 및 겹침 여부를 클릭 한 번으로 검증하는 엑셀 매크로 도구입니다.</p>
-                <a href="#" class="btn">파일 다운로드</a>
-            </div>
+  <!-- EDIT BANNER -->
+  <div class="edit-banner" id="editBanner">
+    <i class="ti ti-pencil" aria-hidden="true"></i>
+    편집 모드 — 카드 우측 상단의 <strong style="margin:0 4px;">✕</strong> 버튼으로 삭제, 하단 버튼으로 도구를 추가할 수 있습니다.
+  </div>
 
-            <div class="card">
-                <div class="tag-group">
-                    <span class="tag">Web App</span>
-                </div>
-                <h3>고교학점제 교육과정 편성 지원</h3>
-                <p>지역 학교 교육과정 컨설팅 경험을 바탕으로, 고교학점제 단위 배당 및 선택 과목 편성을 시각적으로 점검할 수 있는 도구입니다.</p>
-                <a href="#" target="_blank" class="btn">웹앱 실행하기</a>
-            </div>
-        </div>
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-tag">✦ 수업 &amp; 업무용 웹툴 모음</div>
+    <h1>학교 업무 및 수업<br><span> 웹툴 모음</span></h1>
+    <p> AI·교육 웹툴을 한 곳에서 찾아보세요.</p>
+    <div class="search-wrap">
+      <input type="text" id="searchInput" placeholder="도구 이름이나 기능으로 검색..." />
+      <button onclick="doSearch()"><i class="ti ti-search" aria-hidden="true"></i></button>
+    </div>
+  </div>
 
-        <h2 class="section-title"><span>📐</span> 수학 수업 활용 웹앱 및 교구</h2>
-        <div class="grid">
-            <div class="card">
-                <div class="tag-group">
-                    <span class="tag tag-math">Desmos CL</span>
-                </div>
-                <h3>수열의 귀납적 정의 시각화</h3>
-                <p>데스모스 연산 레이어(CL)를 활용해 학생들이 수열의 변화 양상을 직관적으로 관찰할 수 있도록 돕는 그래프 교구입니다.</p>
-                <a href="#" target="_blank" class="btn">교구 살펴보기</a>
-            </div>
-
-            <div class="card">
-                <div class="tag-group">
-                    <span class="tag tag-data">Data Analysis</span>
-                    <span class="tag tag-math">Math</span>
-                </div>
-                <h3>실물 경제 기반 등비수열 모델링</h3>
-                <p>닷컴 버블, 서브프라임 모기지 사태 등 실제 역사적 금융 데이터를 활용하여 등비수열의 개념을 직관적으로 이해하는 수업 자료입니다.</p>
-                <a href="#" target="_blank" class="btn">수업 자료 보기</a>
-            </div>
-
-            <div class="card">
-                <div class="tag-group">
-                    <span class="tag tag-math">Infographic</span>
-                </div>
-                <h3>학생 도서 선택 확률 분석 시각화</h3>
-                <p>학생들이 특정 도서(도서 D)를 선택할 조건부 확률 등 실생활에 밀접한 통계 데이터를 미니멀한 인포그래픽으로 구현했습니다.</p>
-                <a href="#" target="_blank" class="btn">인포그래픽 보기</a>
-            </div>
-
-            <div class="card">
-                <div class="tag-group">
-                    <span class="tag tag-math">React</span>
-                </div>
-                <h3>SET 카드 게임 웹 애플리케이션</h3>
-                <p>수학적 논리력과 결합 기하학적 개념을 익힐 수 있는 보드게임 'SET'의 논리 구조를 완벽하게 온라인으로 이식한 앱입니다.</p>
-                <a href="#" target="_blank" class="btn">웹앱 실행하기</a>
-            </div>
-        </div>
+  <!-- BODY -->
+  <div class="body">
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num" id="toolCount">12</div>
+        <div class="stat-label">등록된 도구</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">2</div>
+        <div class="stat-label">카테고리</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">🆓</div>
+        <div class="stat-label">무료 도구 다수 포함</div>
+      </div>
     </div>
 
-    <footer>
-        © 2026. 선생님의 지속적인 연구와 개발을 응원합니다.
-    </footer>
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="filterCards('all',this)">전체</button>
+      <button class="filter-btn" onclick="filterCards('ai',this)">🤖 AI 도구</button>
+      <button class="filter-btn" onclick="filterCards('edu',this)">📚 교육 도구</button>
+      <button class="filter-btn" onclick="filterCards('free',this)">무료</button>
+      <button class="filter-btn" onclick="filterCards('paid',this)">유료/프리미엄</button>
+      <button class="btn-add-card" onclick="openAddModal()">
+        <i class="ti ti-plus" aria-hidden="true"></i> 도구 추가
+      </button>
+    </div>
 
+    <!-- AI 섹션 -->
+    <div class="section-title" id="ai">
+      <i class="ti ti-robot" aria-hidden="true"></i> AI 도구
+    </div>
+    <div class="grid" id="grid-ai">
+
+      <div class="card-wrap">
+        <button class="btn-delete" onclick="askDelete(this)" aria-label="삭제"><i class="ti ti-x"></i></button>
+        <a class="card" href="https://chat.openai.com" target="_blank" data-cat="ai" data-price="both">
+          <div class="card-top"><div class="icon ai"><i class="ti ti-message-chatbot" aria-hidden="true"></i></div><span class="card-name">ChatGPT</span><span class="badge badge-both">무료+유료</span></div>
+          <p class="card-desc">텍스트 생성, 요약, 번역, 코딩 보조까지. 가장 널리 쓰이는 AI 챗봇.</p>
+          <div class="card-footer"><span class="card-cat">AI 도구</span><span class="card-link"><i class="ti ti-external-link" aria-hidden="true"></i> 바로가기</span></div>
+        </a>
+      </div>
+
+      <div class="card-wrap">
+        <button class="btn-delete" onclick="askDelete(this)" aria-label="삭제"><i class="ti ti-x"></i></button>
+        <a class="card" href="https://claude.ai" target="_blank" data-cat="ai" data-price="both">
+          <div class="card-top"><div class="icon ai"><i class="ti ti-brain" aria-hidden="true"></i></div><span class="card-name">Claude</span><span class="badge badge-both">무료+유료</span></div>
+          <p class="card-desc">긴 문서 분석, 글쓰기, 수업 자료 제작에 강한 Anthropic의 AI.</p>
+          <div class="card-footer"><span class="card-cat">AI 도구</span><span class="card-link"><i class="ti ti-external-link" aria-hidden="true"></i> 바로가기</span></div>
+        </a>
+      </div>
+
+      <div class="card-wrap">
+        <button class="btn-delete" onclick="askDelete(this)" aria-label="삭제"><i class="ti ti-x"></i></button>
+        <a class="card" href="https://gemini.google.com" target="_blank" data-cat="ai" data-price="both">
+          <div class="card-top"><div class="icon ai"><i class="ti ti-sparkles" aria-hidden="true"></i></div><span class="card-name">Gemini</span><span class="badge badge-both">무료+유료</span></div>
+          <p class="card-desc">Google의 AI. Google Docs·Drive와 연동이 강점이며 실시간 정보 검색 가능.</p>
+          <div class="card-footer"><span class="card-cat">AI 도구</span><span class="card-link"><i class="ti ti-external-link" aria-hidden="true"></i> 바로가기</span></div>
+        </a>
+      </div>
+
+      <div class="card-wrap">
+        <button class="btn-delete" onclick="askDelete(this)" aria-label="삭제"><i class="ti ti-x"></i></button>
+        <a class="card" href="https://www.perplexity.ai" target="_blank" data-cat="ai" data-price="both">
+          <div class="card-top"><div class="icon ai"><i class="ti ti-search" aria-hidden="true"></i></div><span class="card-name">Perplexity AI</span><span class="badge badge-both">무료+유료</span></div>
+          <p class="card-desc">실시간 웹 검색 기반 AI. 출처를 함께 제공해 신뢰성 높은 자료 조사 가능.</p>
+          <div class="card-footer"><span class="card-cat">AI 도구</span><span class="card-link"><i class="ti ti-external-link" aria-hidden="true"></i> 바로가기</span></div>
+        </a>
+      </div>
+
+      <div class="card-wrap">
+        <button class="btn-delete" onclick="askDelete(this)" aria-label="삭제"><i class="ti ti-x"></i></button>
+        <a class="card" href="https://gamma.app" target="_blank" data-cat="ai" data-price="both">
+          <div class="card-top"><div class="icon ai"><i class="ti ti-presentation" aria-hidden="true"></i></div><span class="card-name">Gamma</span><span class="badge badge-both">무료+유료</span></div>
+          <p class="card-desc">AI가 프롬프트 한 줄로 프레젠테이션을 자동 생성. 수업 자료 제작에 탁월.</p>
+          <div class="card-footer"><span class="card-cat">AI 도구</span><span class="card-link"><i class="ti ti-external-link" aria-hidden="true"></i> 바로가기</span></div>
+        </a>
+      </div>
+
+      <div class="card-wrap">
+        <button class="btn-delete" onclick="askDelete(this)" aria-label="삭제"><i class="ti ti-x"></i></button>
+        <a class="card" href="https://www.notion.so/product/ai" target="_blank" data-cat="ai" data-price="paid">
+          <div class="card-top"><div class="icon ai"><i class="ti ti-file-text" aria-hidden="true"></i></div><span class="card-name">Notion AI</span><span class="badge badge-paid">유료</span></div>
+          <p class="card-desc">Notion 문서 안에서 AI 초안 작성, 요약, 번역을 바로 실행할 수 있는 도구.</p>
+          <div class="card-footer"><span class="card-cat">AI 도구</span><span class="card-link"><i class="ti ti-external-link" aria-hidden="true"></i> 바로가기</span></div>
+        </a>
+      </div>
+
+    </div>
+
+    <!-- 교육 섹션 -->
+    <div class="section-title" id="edu">
+      <i class="ti ti-school" aria-hidden="true"></i> 수업·교육 전용 도구
+    </div>
+    <div class="grid" id="grid-edu">
+
+      <div class="card-wrap">
+        <button class="btn-delete" onclick="askDelete(this)" aria-label="삭제"><i class="ti ti-x"></i></button>
+        <a class="card" href="https://padlet.com" target="_blank" data-cat="edu" data-price="both">
+          <div class="card-top"><div class="icon edu"><i class="ti ti-layout-board" aria-hidden="true"></i></div><span class="card-name">Padlet</span><span class="badge badge-both">무료+유료</span></div>
+          <p class="card-desc">학생들이 실시간으로 포스트잇처럼 의견을 붙이는 협업 보드.</p>
+          <div class="card-footer"><span class="card-cat">교육 도구</span><span class="card-link"><i class="ti ti-external-link" aria-hidden="true"></i> 바로가기</span></div>
+        </a>
+      </div>
+
+      <div class="card-wrap">
+        <button class="btn-delete" onclick="askDelete(this)" aria-label="삭제"><i class="ti ti-x"></i></button>
+        <a class="card" href="https://kahoot.com" target="_blank" data-cat="edu" data-price="both">
+          <div class="card-top"><div class="icon edu"><i class="ti ti-device-gamepad" aria-hidden="true"></i></div><span class="card-name">Kahoot!</span><span class="badge badge-both">무료+유료</span></div>
+          <p class="card-desc">게임 형식 퀴즈로 수업 참여도를 극적으로 높이는 대표 에듀테크 툴.</p>
+          <div class="card-footer"><span class="card-cat">교육 도구</span><span class="card-link"><i class="ti ti-external-link" aria-hidden="true"></i> 바로가기</span></div>
+        </a>
+      </div>
+
+      <div class="card-wrap">
+        <button class="btn-delete" onclick="askDelete(this)" aria-label="삭제"><i class="ti ti-x"></i></button>
+        <a class="card" href="https://quizlet.com" target="_blank" data-cat="edu" data-price="both">
+          <div class="card-top"><div class="icon edu"><i class="ti ti-cards" aria-hidden="true"></i></div><span class="card-name">Quizlet</span><span class="badge badge-both">무료+유료</span></div>
+          <p class="card-desc">플래시카드와 학습 게임으로 어휘·개념을 효과적으로 암기할 수 있는 툴.</p>
+          <div class="card-footer"><span class="card-cat">교육 도구</span><span class="card-link"><i class="ti ti-external-link" aria-hidden="true"></i> 바로가기</span></div>
+        </a>
+      </div>
+
+      <div class="card-wrap">
+        <button class="btn-delete" onclick="askDelete(this)" aria-label="삭제"><i class="ti ti-x"></i></button>
+        <a class="card" href="https://www.mentimeter.com" target="_blank" data-cat="edu" data-price="both">
+          <div class="card-top"><div class="icon edu"><i class="ti ti-chart-bar" aria-hidden="true"></i></div><span class="card-name">Mentimeter</span><span class="badge badge-both">무료+유료</span></div>
+          <p class="card-desc">실시간 투표·워드클라우드·Q&A로 수업과 발표를 인터랙티브하게 진행.</p>
+          <div class="card-footer"><span class="card-cat">교육 도구</span><span class="card-link"><i class="ti ti-external-link" aria-hidden="true"></i> 바로가기</span></div>
+        </a>
+      </div>
+
+      <div class="card-wrap">
+        <button class="btn-delete" onclick="askDelete(this)" aria-label="삭제"><i class="ti ti-x"></i></button>
+        <a class="card" href="https://www.canva.com/education/" target="_blank" data-cat="edu" data-price="free">
+          <div class="card-top"><div class="icon edu"><i class="ti ti-palette" aria-hidden="true"></i></div><span class="card-name">Canva for Education</span><span class="badge badge-free">무료</span></div>
+          <p class="card-desc">교사·학생 인증 시 전체 기능 무료. 수업 자료·포스터·영상 제작에 최적.</p>
+          <div class="card-footer"><span class="card-cat">교육 도구</span><span class="card-link"><i class="ti ti-external-link" aria-hidden="true"></i> 바로가기</span></div>
+        </a>
+      </div>
+
+      <div class="card-wrap">
+        <button class="btn-delete" onclick="askDelete(this)" aria-label="삭제"><i class="ti ti-x"></i></button>
+        <a class="card" href="https://classroom.google.com" target="_blank" data-cat="edu" data-price="free">
+          <div class="card-top"><div class="icon edu"><i class="ti ti-book" aria-hidden="true"></i></div><span class="card-name">Google Classroom</span><span class="badge badge-free">무료</span></div>
+          <p class="card-desc">과제 배포·수거·채점을 한 곳에서. 구글 워크스페이스와 완벽 연동.</p>
+          <div class="card-footer"><span class="card-cat">교육 도구</span><span class="card-link"><i class="ti ti-external-link" aria-hidden="true"></i> 바로가기</span></div>
+        </a>
+      </div>
+
+    </div>
+
+    <div class="empty-state" id="emptyState">
+      <i class="ti ti-mood-empty" aria-hidden="true"></i>
+      검색 결과가 없습니다
+    </div>
+  </div>
+
+  <footer>
+    © 2025 WebTool 모음 &nbsp;·&nbsp; 우측 상단 <strong style="color:#93C5FD;">도구 편집</strong> 버튼으로 추가·삭제할 수 있습니다 ✨
+  </footer>
+
+  <!-- ── MODAL OVERLAY ── -->
+  <div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
+    <div class="modal" id="modalBox">
+      <button class="modal-close" onclick="closeModal()" aria-label="닫기">
+        <i class="ti ti-x" aria-hidden="true"></i>
+      </button>
+
+      <!-- 비밀번호 화면 -->
+      <div id="pwScreen">
+        <i class="ti ti-lock pw-icon" aria-hidden="true"></i>
+        <h2>관리자 인증</h2>
+        <p class="modal-sub">편집 모드를 사용하려면 비밀번호를 입력하세요.</p>
+        <input type="password" id="pwInput" placeholder="비밀번호 입력" maxlength="20"
+               onkeydown="if(event.key==='Enter') checkPw()" />
+        <div id="pwError"></div>
+        <button class="btn-pw" onclick="checkPw()">확인</button>
+      </div>
+
+      <!-- 도구 추가 폼 -->
+      <div id="formScreen">
+        <h2>새 도구 추가</h2>
+        <p class="modal-sub">아래 정보를 입력하면 카드가 바로 추가됩니다.</p>
+        <div class="field">
+          <label>도구 이름 <span>*</span></label>
+          <input type="text" id="f-name" placeholder="예: Notion, Canva …" />
+        </div>
+        <div class="field">
+          <label>URL <span>*</span></label>
+          <input type="url" id="f-url" placeholder="https://example.com" />
+        </div>
+        <div class="field">
+          <label>한 줄 설명 <span>*</span></label>
+          <textarea id="f-desc" placeholder="어떤 도구인지 간단히 설명해 주세요."></textarea>
+        </div>
+        <div class="field-row">
+          <div class="field" style="margin-bottom:0">
+            <label>카테고리 <span>*</span></label>
+            <select id="f-cat">
+              <option value="ai">🤖 AI 도구</option>
+              <option value="edu">📚 교육 도구</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>가격 <span>*</span></label>
+            <select id="f-price">
+              <option value="free">무료</option>
+              <option value="paid">유료</option>
+              <option value="both">무료+유료</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:1.25rem">
+          <button class="btn-submit" onclick="submitTool()">
+            <i class="ti ti-plus" aria-hidden="true"></i> 도구 추가하기
+          </button>
+        </div>
+      </div>
+
+      <!-- 삭제 확인 화면 -->
+      <div id="deleteScreen">
+        <i class="ti ti-alert-triangle delete-icon" aria-hidden="true"></i>
+        <h2>도구를 삭제할까요?</h2>
+        <p class="modal-sub"><span class="del-name" id="delName"></span> 카드가 목록에서 제거됩니다.</p>
+        <div class="btn-row">
+          <button class="btn-cancel" onclick="closeModal()">취소</button>
+          <button class="btn-confirm-del" onclick="confirmDelete()">삭제하기</button>
+        </div>
+      </div>
+
+      <!-- 추가 완료 -->
+      <div class="done-screen" id="doneAddScreen">
+        <i class="ti ti-circle-check done-icon-add" aria-hidden="true"></i>
+        <h3>추가 완료!</h3>
+        <p>새 도구가 목록에 등록됐습니다.</p>
+      </div>
+
+      <!-- 삭제 완료 -->
+      <div class="done-screen" id="doneDelScreen">
+        <i class="ti ti-trash done-icon-del" aria-hidden="true"></i>
+        <h3>삭제 완료!</h3>
+        <p>도구가 목록에서 제거됐습니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const PW = '1234';
+    let editMode = false;
+    let pendingDeleteWrap = null;
+    let pendingAction = 'add'; // 'add' | 'delete'
+
+    /* ── EDIT MODE TOGGLE ── */
+    function toggleEditMode() {
+      if (!editMode) {
+        // 비밀번호 검증 후 편집 모드 진입
+        pendingAction = 'editToggle';
+        openPwModal();
+      } else {
+        exitEditMode();
+      }
+    }
+
+    function enterEditMode() {
+      editMode = true;
+      document.body.classList.add('edit-mode');
+      document.getElementById('btnEditNav').classList.add('active');
+      document.getElementById('btnEditNav').innerHTML = '<i class="ti ti-x" aria-hidden="true"></i> 편집 종료';
+      document.getElementById('editBanner').classList.add('show');
+    }
+
+    function exitEditMode() {
+      editMode = false;
+      document.body.classList.remove('edit-mode');
+      document.getElementById('btnEditNav').classList.remove('active');
+      document.getElementById('btnEditNav').innerHTML = '<i class="ti ti-edit" aria-hidden="true"></i> 도구 편집';
+      document.getElementById('editBanner').classList.remove('show');
+    }
+
+    /* ── MODAL HELPERS ── */
+    function showOnly(id) {
+      ['pwScreen','formScreen','deleteScreen','doneAddScreen','doneDelScreen']
+        .forEach(s => document.getElementById(s).style.display = s === id ? '' : 'none');
+    }
+
+    function openPwModal() {
+      document.getElementById('overlay').classList.add('open');
+      document.getElementById('pwInput').value = '';
+      document.getElementById('pwError').textContent = '';
+      showOnly('pwScreen');
+      setTimeout(() => document.getElementById('pwInput').focus(), 80);
+    }
+
+    function openAddModal() {
+      pendingAction = 'add';
+      openPwModal();
+    }
+
+    function closeModal() {
+      document.getElementById('overlay').classList.remove('open');
+      pendingDeleteWrap = null;
+    }
+
+    function handleOverlayClick(e) {
+      if (e.target === document.getElementById('overlay')) closeModal();
+    }
+
+    /* ── PASSWORD ── */
+    function checkPw() {
+      const val = document.getElementById('pwInput').value;
+      if (val === PW) {
+        if (pendingAction === 'editToggle') {
+          closeModal();
+          enterEditMode();
+        } else if (pendingAction === 'add') {
+          showOnly('formScreen');
+          setTimeout(() => document.getElementById('f-name').focus(), 80);
+        } else if (pendingAction === 'delete') {
+          showOnly('deleteScreen');
+        }
+      } else {
+        document.getElementById('pwError').textContent = '비밀번호가 올바르지 않습니다.';
+        document.getElementById('pwInput').value = '';
+        document.getElementById('pwInput').focus();
+      }
+    }
+
+    /* ── ADD TOOL ── */
+    function submitTool() {
+      const name  = document.getElementById('f-name').value.trim();
+      const url   = document.getElementById('f-url').value.trim();
+      const desc  = document.getElementById('f-desc').value.trim();
+      const cat   = document.getElementById('f-cat').value;
+      const price = document.getElementById('f-price').value;
+
+      if (!name || !url || !desc) { alert('이름, URL, 설명은 필수 항목입니다.'); return; }
+
+      const badgeMap = { free:['badge-free','무료'], paid:['badge-paid','유료'], both:['badge-both','무료+유료'] };
+      const catLabel  = cat === 'ai' ? 'AI 도구' : '교육 도구';
+      const iconClass = cat === 'ai' ? 'ai' : 'edu';
+      const iconName  = cat === 'ai' ? 'ti-robot' : 'ti-book';
+      const [badgeClass, badgeText] = badgeMap[price];
+      const href = url.startsWith('http') ? url : 'https://' + url;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'card-wrap';
+      wrap.innerHTML = `
+        <button class="btn-delete" onclick="askDelete(this)" aria-label="삭제"><i class="ti ti-x"></i></button>
+        <a class="card" href="${href}" target="_blank" data-cat="${cat}" data-price="${price}">
+          <div class="card-top">
+            <div class="icon ${iconClass}"><i class="ti ${iconName}" aria-hidden="true"></i></div>
+            <span class="card-name">${escHtml(name)}</span>
+            <span class="badge ${badgeClass}">${badgeText}</span>
+          </div>
+          <p class="card-desc">${escHtml(desc)}</p>
+          <div class="card-footer">
+            <span class="card-cat">${catLabel}</span>
+            <span class="card-link"><i class="ti ti-external-link" aria-hidden="true"></i> 바로가기</span>
+          </div>
+        </a>`;
+
+      document.getElementById('grid-' + cat).appendChild(wrap);
+      updateCount();
+
+      ['f-name','f-url','f-desc'].forEach(id => document.getElementById(id).value = '');
+
+      showOnly('doneAddScreen');
+      setTimeout(closeModal, 1600);
+    }
+
+    /* ── DELETE TOOL ── */
+    function askDelete(btn) {
+      const wrap = btn.closest('.card-wrap');
+      const name = wrap.querySelector('.card-name').textContent;
+      pendingDeleteWrap = wrap;
+      pendingAction = 'delete';
+      document.getElementById('delName').textContent = name;
+
+      // 이미 편집 모드이므로 비번 재확인 없이 바로 삭제 확인
+      document.getElementById('overlay').classList.add('open');
+      showOnly('deleteScreen');
+    }
+
+    function confirmDelete() {
+      if (!pendingDeleteWrap) return;
+      pendingDeleteWrap.remove();
+      pendingDeleteWrap = null;
+      updateCount();
+      showOnly('doneDelScreen');
+      setTimeout(closeModal, 1400);
+    }
+
+    /* ── UTILS ── */
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function updateCount() {
+      document.getElementById('toolCount').textContent = document.querySelectorAll('.card').length;
+    }
+
+    /* ── FILTER ── */
+    function filterCards(type, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      let visible = 0;
+      document.querySelectorAll('.card-wrap').forEach(wrap => {
+        const card = wrap.querySelector('.card');
+        const cat = card.dataset.cat, price = card.dataset.price;
+        let show = false;
+        if (type === 'all')  show = true;
+        else if (type === 'ai')   show = cat === 'ai';
+        else if (type === 'edu')  show = cat === 'edu';
+        else if (type === 'free') show = price === 'free';
+        else if (type === 'paid') show = price === 'paid' || price === 'both';
+        wrap.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      document.getElementById('emptyState').style.display = visible === 0 ? 'block' : 'none';
+    }
+
+    /* ── SEARCH ── */
+    function doSearch() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      let visible = 0;
+      document.querySelectorAll('.card-wrap').forEach(wrap => {
+        const show = wrap.querySelector('.card').innerText.toLowerCase().includes(q);
+        wrap.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      document.getElementById('emptyState').style.display = visible === 0 ? 'block' : 'none';
+    }
+    document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+    /* ── ESC ── */
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+  </script>
 </body>
 </html>
