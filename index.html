@@ -296,6 +296,7 @@
   window.firebaseApp = app;
   window.firebaseDb = db;
   window.firestoreApi = { collection, getDocs, doc, setDoc, deleteDoc };
+  window.dispatchEvent(new CustomEvent('firebase-ready'));
 </script>
 
 <script>
@@ -384,6 +385,9 @@ async function deleteToolFromFirestore(id) {
 }
 
 async function loadDataFromFirestore() {
+  if (!window.firestoreApi || !window.firebaseDb) {
+    throw new Error('Firebase가 아직 초기화되지 않았습니다.');
+  }
   try {
     const { collection, getDocs } = window.firestoreApi;
     await seedFirestoreIfEmpty();
@@ -1100,7 +1104,11 @@ function esc(s) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
 // ── 초기화 ────────────────────────────────────────────
-loadDataFromFirestore();
+function startApp() {
+  loadDataFromFirestore();
+}
+window.addEventListener('firebase-ready', startApp);
+if (window.firestoreApi) startApp();
 </script>
 </body>
 </html>
