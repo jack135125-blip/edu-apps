@@ -63,12 +63,20 @@
     .icon.work{background:#EDE9FE;color:#7C3AED;}
     .icon.class{background:#DCFCE7;color:#16A34A;}
     .icon.etc{background:#FEF3C7;color:#B45309;}
-    .card-name{font-size:15px;font-weight:700;color:#0F1B3C;}
+    .card-name{font-size:15px;font-weight:700;color:#0F1B3C;flex:1;min-width:0;}
     .card-desc{font-size:13px;color:#475569;line-height:1.6;margin-bottom:.75rem;}
     .card-footer{display:flex;align-items:center;justify-content:space-between;}
     .card-cat{font-size:11px;font-weight:700;color:#3B82F6;background:#EFF6FF;padding:2px 8px;border-radius:6px;}
     .card-link{font-size:12px;color:#94a3b8;display:flex;align-items:center;gap:4px;}
     .card:hover .card-link{color:#3B82F6;}
+    .card-private-badge{font-size:10px;font-weight:700;color:#B45309;background:#FEF3C7;padding:2px 7px;border-radius:6px;display:inline-flex;align-items:center;gap:3px;margin-left:auto;}
+    body.edit-mode .card-private .card{border-color:#FCD34D;}
+    .btn-lock{display:none;position:absolute;top:-8px;left:-8px;width:26px;height:26px;border-radius:50%;background:#F59E0B;color:#fff;border:2px solid #fff;cursor:pointer;font-size:13px;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.18);transition:background .15s;z-index:2;}
+    .btn-lock:hover{background:#D97706;}
+    body.edit-mode .btn-lock{display:flex;}
+    .field-checkbox{margin-top:.25rem;}
+    .checkbox-label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#475569;cursor:pointer;}
+    .checkbox-label input{width:16px;height:16px;accent-color:#3B82F6;cursor:pointer;}
     .empty-state{text-align:center;padding:3rem 1rem;color:#94a3b8;font-size:15px;display:none;}
     .empty-state i{font-size:40px;display:block;margin-bottom:.75rem;color:#BFDBFE;}
     footer{background:#0F1B3C;text-align:center;padding:2rem;color:#60A5FA;font-size:13px;font-weight:600;}
@@ -157,7 +165,7 @@
 
 <div class="edit-banner" id="editBanner">
   <i class="ti ti-pencil"></i>
-  편집 모드 — <strong style="margin:0 4px">카드 드래그</strong>로 순서 변경 및 카테고리 이동 · <strong style="margin:0 4px">✕</strong> 버튼으로 삭제 · <strong style="margin:0 4px">카테고리 편집</strong>에서 드래그로 순서 변경
+  편집 모드 — <strong style="margin:0 4px">카드 드래그</strong>로 순서 변경 · <strong style="margin:0 4px">🔒</strong> 버튼으로 비공개 설정 · <strong style="margin:0 4px">✕</strong> 버튼으로 삭제
 </div>
 
 <div class="hero">
@@ -204,8 +212,8 @@
     <!-- PW -->
     <div id="pwScreen">
       <i class="ti ti-lock pw-icon"></i>
-      <h2>관리자 인증</h2>
-      <p class="modal-sub">편집 모드를 사용하려면 비밀번호를 입력하세요.</p>
+      <h2 id="pwTitle">관리자 인증</h2>
+      <p class="modal-sub" id="pwSub">편집 모드를 사용하려면 비밀번호를 입력하세요.</p>
       <input type="password" id="pwInput" placeholder="비밀번호 입력" maxlength="20"
              onkeydown="if(event.key==='Enter')checkPw()"/>
       <div id="pwError"></div>
@@ -234,6 +242,12 @@
         <select id="f-subcat">
           <option value="">선택 안 함</option>
         </select>
+      </div>
+      <div class="field field-checkbox">
+        <label class="checkbox-label">
+          <input type="checkbox" id="f-private"/>
+          <span><i class="ti ti-lock"></i> 관리자 전용 (비밀번호 필요 시에만 열림)</span>
+        </label>
       </div>
       <button class="btn-submit" onclick="submitTool()"><i class="ti ti-plus"></i> 도구 추가하기</button>
     </div>
@@ -415,6 +429,7 @@ async function loadDataFromFirestore() {
 let editMode = false;
 let pendingDeleteId = null;
 let pendingAction = null;
+let pendingPrivateToolId = null;
 let _currentFilter = 'all';
 
 // ── 스크린 전환 ───────────────────────────────────────
@@ -523,6 +538,7 @@ function setupGridDrop(grid) {
 function makeCardEl(t) {
   const cat = categories.find(c => c.id === t.cat);
   const iconClass = t.cat;
+  const isPrivate = !!t.private;
   let catLabel = cat ? cat.emoji+' '+cat.name : '';
   
   // 하위 카테고리가 있으면 표시
@@ -534,13 +550,23 @@ function makeCardEl(t) {
   }
 
   const wrap = document.createElement('div');
-  wrap.className = 'card-wrap';
+  wrap.className = 'card-wrap' + (isPrivate ? ' card-private' : '');
   wrap.dataset.toolId = t.id;
   
   // 편집 모드일 때만 드래그 가능
   if (editMode) {
     wrap.draggable = true;
   }
+
+  const lockBtn = document.createElement('button');
+  lockBtn.className = 'btn-lock';
+  lockBtn.setAttribute('aria-label', isPrivate ? '비공개 해제' : '비공개 설정');
+  lockBtn.innerHTML = `<i class="ti ti-${isPrivate ? 'lock' : 'lock-open'}"></i>`;
+  lockBtn.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleToolPrivate(t.id);
+  });
 
   const delBtn = document.createElement('button');
   delBtn.className = 'btn-delete';
@@ -550,35 +576,56 @@ function makeCardEl(t) {
 
   const a = document.createElement('a');
   a.className = 'card';
-  a.href = t.url;
-  a.target = '_blank';
+  a.href = isPrivate ? '#' : t.url;
+  if (!isPrivate) a.target = '_blank';
   a.innerHTML = `
     <div class="card-top">
       <div class="icon ${iconClass}">
         <i class="ti ti-${iconClass==='work'?'briefcase':iconClass==='class'?'school':'sparkles'}"></i>
       </div>
       <span class="card-name">${esc(t.name)}</span>
+      ${isPrivate ? '<span class="card-private-badge"><i class="ti ti-lock"></i> 관리자 전용</span>' : ''}
     </div>
     <p class="card-desc">${esc(t.desc)}</p>
     <div class="card-footer">
       <span class="card-cat">${catLabel}</span>
-      <span class="card-link"><i class="ti ti-external-link"></i> 바로가기</span>
+      <span class="card-link"><i class="ti ti-${isPrivate ? 'lock' : 'external-link'}"></i> ${isPrivate ? '잠금됨' : '바로가기'}</span>
     </div>`;
 
   // 드래그 이벤트 (항상 등록하되 editMode 체크)
   wrap.addEventListener('dragstart', handleCardDragStart);
   wrap.addEventListener('dragend', handleCardDragEnd);
   
-  // 링크 클릭이 편집 모드에서 방해받지 않도록
   a.addEventListener('click', function(e) {
     if (editMode) {
       e.preventDefault();
+      return;
+    }
+    if (isPrivate) {
+      e.preventDefault();
+      openPrivateLinkModal(t.id);
     }
   });
 
+  wrap.appendChild(lockBtn);
   wrap.appendChild(delBtn);
   wrap.appendChild(a);
   return wrap;
+}
+
+async function toggleToolPrivate(id) {
+  const tool = tools.find(t => t.id === id);
+  if (!tool) return;
+  tool.private = !tool.private;
+  try {
+    const idx = tools.findIndex(t => t.id === id);
+    await persistTool(tool, idx);
+    render(_currentFilter);
+  } catch (err) {
+    console.error(err);
+    tool.private = !tool.private;
+    alert('비공개 설정 저장에 실패했습니다.');
+  }
 }
 
 // ── 편집 모드 ─────────────────────────────────────────
@@ -722,7 +769,9 @@ function openOverlay() {
   document.getElementById('overlay').classList.add('open');
 }
 
-function openPwModal() {
+function openPwModal(title, sub) {
+  document.getElementById('pwTitle').textContent = title || '관리자 인증';
+  document.getElementById('pwSub').textContent = sub || '편집 모드를 사용하려면 비밀번호를 입력하세요.';
   document.getElementById('pwInput').value = '';
   document.getElementById('pwError').textContent = '';
   showOnly('pwScreen');
@@ -730,11 +779,23 @@ function openPwModal() {
   setTimeout(() => document.getElementById('pwInput').focus(), 80);
 }
 
+function openPrivateLinkModal(toolId) {
+  const tool = tools.find(t => t.id === toolId);
+  if (!tool) return;
+  pendingAction = 'privateLink';
+  pendingPrivateToolId = toolId;
+  openPwModal(
+    '관리자 전용 도구',
+    `"${tool.name}"을(를) 열려면 비밀번호를 입력하세요.`
+  );
+}
+
 // 도구 추가: 편집 모드면 비번 없이 바로 폼 표시
 function openAddModal() {
   if (editMode) {
     ['f-name','f-url','f-desc'].forEach(i => document.getElementById(i).value = '');
     document.getElementById('f-cat').value = 'work';
+    document.getElementById('f-private').checked = false;
     updateSubcatOptions();
     showOnly('formScreen');
     openOverlay();
@@ -760,6 +821,8 @@ function openCatEdit() {
 function closeModal() {
   document.getElementById('overlay').classList.remove('open');
   pendingDeleteId = null;
+  pendingPrivateToolId = null;
+  pendingAction = null;
 }
 
 function handleOverlayClick(e) {
@@ -782,9 +845,15 @@ function checkPw() {
   // 요청했던 액션 처리
   if (pendingAction === 'editToggle') {
     closeModal();
+  } else if (pendingAction === 'privateLink') {
+    const tool = tools.find(t => t.id === pendingPrivateToolId);
+    if (tool) window.open(tool.url, '_blank', 'noopener');
+    pendingPrivateToolId = null;
+    closeModal();
   } else if (pendingAction === 'add') {
     ['f-name','f-url','f-desc'].forEach(i => document.getElementById(i).value = '');
     document.getElementById('f-cat').value = 'work';
+    document.getElementById('f-private').checked = false;
     updateSubcatOptions();
     showOnly('formScreen');
     setTimeout(() => document.getElementById('f-name').focus(), 80);
@@ -827,7 +896,8 @@ async function submitTool() {
   const newTool = {
     id: 'u'+Date.now(), cat, subcat, name,
     url: url.startsWith('http') ? url : 'https://'+url,
-    desc
+    desc,
+    private: document.getElementById('f-private').checked
   };
   tools.push(newTool);
 
