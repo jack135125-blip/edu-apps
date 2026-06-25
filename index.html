@@ -278,6 +278,24 @@
   </div>
 </div>
 
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+  // TODO: Firestore, Auth 등 필요한 SDK를 여기서 import하세요.
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDW0MpN_XIlJaWqpNmnxFUzsFoaz2W8EMw",
+    authDomain: "edu-apps-234a8.firebaseapp.com",
+    projectId: "edu-apps-234a8",
+    storageBucket: "edu-apps-234a8.firebasestorage.app",
+    messagingSenderId: "66001712638",
+    appId: "1:66001712638:web:131c0050b81b81505fbcaf"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  window.firebaseApp = app;
+</script>
+
 <script>
 // ── DATA ─────────────────────────────────────────────
 const PW = '1234';
