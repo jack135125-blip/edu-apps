@@ -53,7 +53,7 @@
     .card-wrap{position:relative;}
     .card{background:#fff;border:.5px solid #BFDBFE;border-radius:14px;padding:1.1rem 1.25rem;text-decoration:none;display:block;transition:transform .18s,box-shadow .18s,border-color .18s;}
     .card:hover{transform:translateY(-3px);border-color:#3B82F6;box-shadow:0 6px 24px rgba(59,130,246,.15);}
-    body.edit-mode .card{border-color:#93C5FD;}
+    body.edit-mode .card{border-color:#93C5FD;cursor:pointer;}
     body.edit-mode .card:hover{transform:none;box-shadow:none;border-color:#3B82F6;}
     .btn-delete{display:none;position:absolute;top:-8px;right:-8px;width:26px;height:26px;border-radius:50%;background:#EF4444;color:#fff;border:2px solid #fff;cursor:pointer;font-size:13px;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.18);transition:background .15s;z-index:2;}
     .btn-delete:hover{background:#DC2626;}
@@ -165,7 +165,7 @@
 
 <div class="edit-banner" id="editBanner">
   <i class="ti ti-pencil"></i>
-  편집 모드 — <strong style="margin:0 4px">카드 드래그</strong>로 순서 변경 · <strong style="margin:0 4px">🔒</strong> 버튼으로 비공개 설정 · <strong style="margin:0 4px">✕</strong> 버튼으로 삭제
+  편집 모드 — <strong style="margin:0 4px">카드 클릭</strong>으로 도구 수정 · <strong style="margin:0 4px">드래그</strong>로 순서 변경 · <strong style="margin:0 4px">🔒</strong> 비공개 · <strong style="margin:0 4px">✕</strong> 삭제
 </div>
 
 <div class="hero">
@@ -220,10 +220,10 @@
       <button class="btn-pw" onclick="checkPw()">확인</button>
     </div>
 
-    <!-- ADD FORM -->
+    <!-- ADD / EDIT FORM -->
     <div id="formScreen" style="display:none">
-      <h2>새 도구 추가</h2>
-      <p class="modal-sub">정보를 입력하면 카드가 바로 등록됩니다.</p>
+      <h2 id="formTitle">새 도구 추가</h2>
+      <p class="modal-sub" id="formSub">정보를 입력하면 카드가 바로 등록됩니다.</p>
       <div class="field"><label>도구 이름 <span>*</span></label>
         <input type="text" id="f-name" placeholder="예: Notion, Figma …"/></div>
       <div class="field"><label>URL <span>*</span></label>
@@ -231,11 +231,7 @@
       <div class="field"><label>한 줄 설명 <span>*</span></label>
         <textarea id="f-desc" placeholder="어떤 도구인지 간단히 설명해 주세요."></textarea></div>
       <div class="field"><label>카테고리 <span>*</span></label>
-        <select id="f-cat" onchange="updateSubcatOptions()">
-          <option value="work">💼 업무용</option>
-          <option value="class">📚 수업용</option>
-          <option value="etc">✨ 기타</option>
-        </select>
+        <select id="f-cat" onchange="updateSubcatOptions()"></select>
       </div>
       <div class="field" id="subcatField" style="display:none">
         <label>하위 카테고리</label>
@@ -249,7 +245,7 @@
           <span><i class="ti ti-lock"></i> 관리자 전용 (비밀번호 필요 시에만 열림)</span>
         </label>
       </div>
-      <button class="btn-submit" onclick="submitTool()"><i class="ti ti-plus"></i> 도구 추가하기</button>
+      <button class="btn-submit" id="formSubmitBtn" onclick="submitTool()"><i class="ti ti-plus"></i> 도구 추가하기</button>
     </div>
 
     <!-- CAT EDIT -->
@@ -272,10 +268,10 @@
       </div>
     </div>
 
-    <!-- DONE ADD -->
-    <div class="done-screen" id="doneAddScreen" style="display:none">
+    <!-- DONE SAVE -->
+    <div class="done-screen" id="doneSaveScreen" style="display:none">
       <i class="ti ti-circle-check" style="color:#22C55E;"></i>
-      <h3>추가 완료!</h3><p>새 도구가 목록에 등록됐습니다.</p>
+      <h3 id="doneSaveTitle">추가 완료!</h3><p id="doneSaveMsg">새 도구가 목록에 등록됐습니다.</p>
     </div>
 
     <!-- DONE DEL -->
@@ -430,11 +426,12 @@ let editMode = false;
 let pendingDeleteId = null;
 let pendingAction = null;
 let pendingPrivateToolId = null;
+let editingToolId = null;
 let _currentFilter = 'all';
 
 // ── 스크린 전환 ───────────────────────────────────────
 // 모든 스크린을 숨기고 지정된 것만 표시
-const ALL_SCREENS = ['pwScreen','formScreen','catEditScreen','deleteScreen','doneAddScreen','doneDelScreen','doneCatScreen'];
+const ALL_SCREENS = ['pwScreen','formScreen','catEditScreen','deleteScreen','doneSaveScreen','doneDelScreen','doneCatScreen'];
 function showOnly(id) {
   ALL_SCREENS.forEach(s => {
     document.getElementById(s).style.display = (s === id) ? 'block' : 'none';
@@ -599,6 +596,7 @@ function makeCardEl(t) {
   a.addEventListener('click', function(e) {
     if (editMode) {
       e.preventDefault();
+      openToolForm(t.id);
       return;
     }
     if (isPrivate) {
@@ -793,13 +791,7 @@ function openPrivateLinkModal(toolId) {
 // 도구 추가: 편집 모드면 비번 없이 바로 폼 표시
 function openAddModal() {
   if (editMode) {
-    ['f-name','f-url','f-desc'].forEach(i => document.getElementById(i).value = '');
-    document.getElementById('f-cat').value = 'work';
-    document.getElementById('f-private').checked = false;
-    updateSubcatOptions();
-    showOnly('formScreen');
-    openOverlay();
-    setTimeout(() => document.getElementById('f-name').focus(), 80);
+    openToolForm(null);
   } else {
     pendingAction = 'add';
     openPwModal();
@@ -823,6 +815,7 @@ function closeModal() {
   pendingDeleteId = null;
   pendingPrivateToolId = null;
   pendingAction = null;
+  editingToolId = null;
 }
 
 function handleOverlayClick(e) {
@@ -839,24 +832,21 @@ function checkPw() {
     return;
   }
 
-  // 비번 통과 → 편집 모드 활성화
-  if (!editMode) enterEditMode();
-
-  // 요청했던 액션 처리
-  if (pendingAction === 'editToggle') {
-    closeModal();
-  } else if (pendingAction === 'privateLink') {
+  // 비공개 링크 열기 — 편집 모드 전환 없음
+  if (pendingAction === 'privateLink') {
     const tool = tools.find(t => t.id === pendingPrivateToolId);
     if (tool) window.open(tool.url, '_blank', 'noopener');
-    pendingPrivateToolId = null;
+    closeModal();
+    return;
+  }
+
+  // 편집 관련 액션만 편집 모드 활성화
+  if (!editMode) enterEditMode();
+
+  if (pendingAction === 'editToggle') {
     closeModal();
   } else if (pendingAction === 'add') {
-    ['f-name','f-url','f-desc'].forEach(i => document.getElementById(i).value = '');
-    document.getElementById('f-cat').value = 'work';
-    document.getElementById('f-private').checked = false;
-    updateSubcatOptions();
-    showOnly('formScreen');
-    setTimeout(() => document.getElementById('f-name').focus(), 80);
+    openToolForm(null);
   } else if (pendingAction === 'catEdit') {
     buildCatEditForm();
     showOnly('catEditScreen');
@@ -867,8 +857,55 @@ function checkPw() {
   pendingAction = null;
 }
 
-// ── 도구 추가 ─────────────────────────────────────────
-function updateSubcatOptions() {
+// ── 도구 추가/편집 ─────────────────────────────────────
+function populateCatSelect() {
+  const sel = document.getElementById('f-cat');
+  sel.innerHTML = categories.map(c =>
+    `<option value="${esc(c.id)}">${c.emoji} ${esc(c.name)}</option>`
+  ).join('');
+}
+
+function openToolForm(toolId) {
+  editingToolId = toolId || null;
+  populateCatSelect();
+
+  const titleEl = document.getElementById('formTitle');
+  const subEl = document.getElementById('formSub');
+  const btnEl = document.getElementById('formSubmitBtn');
+
+  if (toolId) {
+    const tool = tools.find(t => t.id === toolId);
+    if (!tool) return;
+    titleEl.textContent = '도구 편집';
+    subEl.textContent = '이름, URL, 설명, 카테고리를 수정할 수 있습니다.';
+    btnEl.innerHTML = '<i class="ti ti-check"></i> 저장하기';
+    document.getElementById('f-name').value = tool.name;
+    document.getElementById('f-url').value = tool.url;
+    document.getElementById('f-desc').value = tool.desc;
+    document.getElementById('f-cat').value = tool.cat;
+    document.getElementById('f-private').checked = !!tool.private;
+    updateSubcatOptions(tool.subcat);
+  } else {
+    titleEl.textContent = '새 도구 추가';
+    subEl.textContent = '정보를 입력하면 카드가 바로 등록됩니다.';
+    btnEl.innerHTML = '<i class="ti ti-plus"></i> 도구 추가하기';
+    ['f-name','f-url','f-desc'].forEach(i => document.getElementById(i).value = '');
+    document.getElementById('f-cat').value = categories[0]?.id || 'work';
+    document.getElementById('f-private').checked = false;
+    updateSubcatOptions();
+  }
+
+  showOnly('formScreen');
+  openOverlay();
+  setTimeout(() => document.getElementById('f-name').focus(), 80);
+}
+
+function showToolDone(isEdit) {
+  document.getElementById('doneSaveTitle').textContent = isEdit ? '수정 완료!' : '추가 완료!';
+  document.getElementById('doneSaveMsg').textContent = isEdit ? '도구 정보가 업데이트됐습니다.' : '새 도구가 목록에 등록됐습니다.';
+  showOnly('doneSaveScreen');
+}
+function updateSubcatOptions(selectedSubcat) {
   const catId = document.getElementById('f-cat').value;
   const cat = categories.find(c => c.id === catId);
   const subcatField = document.getElementById('subcatField');
@@ -877,11 +914,13 @@ function updateSubcatOptions() {
   if (cat && cat.subcategories && cat.subcategories.length > 0) {
     subcatSelect.innerHTML = '<option value="">선택 안 함</option>';
     cat.subcategories.forEach(sc => {
-      subcatSelect.innerHTML += `<option value="${sc.id}">${sc.name}</option>`;
+      subcatSelect.innerHTML += `<option value="${esc(sc.id)}">${esc(sc.name)}</option>`;
     });
     subcatField.style.display = 'block';
+    subcatSelect.value = selectedSubcat || '';
   } else {
     subcatField.style.display = 'none';
+    subcatSelect.value = '';
   }
 }
 
@@ -891,27 +930,50 @@ async function submitTool() {
   const desc  = document.getElementById('f-desc').value.trim();
   const cat   = document.getElementById('f-cat').value;
   const subcat = document.getElementById('f-subcat').value || null;
+  const isPrivate = document.getElementById('f-private').checked;
   if (!name || !url || !desc) { alert('이름, URL, 설명은 필수입니다.'); return; }
 
-  const newTool = {
-    id: 'u'+Date.now(), cat, subcat, name,
-    url: url.startsWith('http') ? url : 'https://'+url,
-    desc,
-    private: document.getElementById('f-private').checked
-  };
-  tools.push(newTool);
+  const normalizedUrl = url.startsWith('http') ? url : 'https://'+url;
+  const isEdit = !!editingToolId;
 
-  try {
-    await persistTool(newTool, tools.length - 1);
-  } catch (err) {
-    console.error(err);
-    tools.pop();
-    alert('도구 저장에 실패했습니다.');
-    return;
+  if (isEdit) {
+    const tool = tools.find(t => t.id === editingToolId);
+    if (!tool) return;
+    const prev = { name: tool.name, url: tool.url, desc: tool.desc, cat: tool.cat, subcat: tool.subcat, private: tool.private };
+    tool.name = name;
+    tool.url = normalizedUrl;
+    tool.desc = desc;
+    tool.cat = cat;
+    tool.subcat = subcat;
+    tool.private = isPrivate;
+    try {
+      const idx = tools.findIndex(t => t.id === editingToolId);
+      await persistTool(tool, idx);
+    } catch (err) {
+      console.error(err);
+      Object.assign(tool, prev);
+      alert('도구 수정에 실패했습니다.');
+      return;
+    }
+    editingToolId = null;
+  } else {
+    const newTool = {
+      id: 'u'+Date.now(), cat, subcat, name,
+      url: normalizedUrl, desc, private: isPrivate
+    };
+    tools.push(newTool);
+    try {
+      await persistTool(newTool, tools.length - 1);
+    } catch (err) {
+      console.error(err);
+      tools.pop();
+      alert('도구 저장에 실패했습니다.');
+      return;
+    }
   }
 
   render(_currentFilter);
-  showOnly('doneAddScreen');
+  showToolDone(isEdit);
   setTimeout(closeModal, 1600);
 }
 
