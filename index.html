@@ -339,8 +339,8 @@ async function seedFirestoreIfEmpty() {
 
   const categorySnapshot = await getDocs(categoriesCol);
   if (categorySnapshot.empty) {
-    await Promise.all(DEFAULT_CATEGORIES.map(cat =>
-      setDoc(doc(window.firebaseDb, 'categories', cat.id), cat)
+    await Promise.all(DEFAULT_CATEGORIES.map((cat, i) =>
+      setDoc(doc(window.firebaseDb, 'categories', cat.id), { ...cat, order: i })
     ));
   }
 
@@ -352,14 +352,14 @@ async function seedFirestoreIfEmpty() {
   }
 }
 
-async function persistCategory(cat) {
+async function persistCategory(cat, order) {
   const { doc, setDoc } = window.firestoreApi;
-  await setDoc(doc(window.firebaseDb, 'categories', cat.id), cat);
+  await setDoc(doc(window.firebaseDb, 'categories', cat.id), { ...cat, order });
 }
 
 async function persistAllCategories() {
   const { collection, getDocs, doc, deleteDoc } = window.firestoreApi;
-  await Promise.all(categories.map(cat => persistCategory(cat)));
+  await Promise.all(categories.map((cat, i) => persistCategory(cat, i)));
 
   const snapshot = await getDocs(collection(window.firebaseDb, 'categories'));
   const currentIds = new Set(categories.map(c => c.id));
@@ -394,6 +394,11 @@ async function loadDataFromFirestore() {
 
     const categorySnapshot = await getDocs(collection(window.firebaseDb, 'categories'));
     categories = categorySnapshot.docs.map(d => d.data());
+    categories.sort((a, b) => {
+      const ao = a.order ?? DEFAULT_CATEGORIES.findIndex(c => c.id === a.id);
+      const bo = b.order ?? DEFAULT_CATEGORIES.findIndex(c => c.id === b.id);
+      return (ao === -1 ? 999 : ao) - (bo === -1 ? 999 : bo);
+    });
 
     const toolSnapshot = await getDocs(collection(window.firebaseDb, 'tools'));
     tools = toolSnapshot.docs.map(d => d.data());
