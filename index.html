@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WebTool 모음 — 수업 &amp; 업무용 웹툴</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Nunito',sans-serif;background:#EFF6FF;color:#1e3a5f;}
+    nav{background:#0F1B3C;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;}
+    .logo{font-size:18px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px;}
+    .logo i{color:#60A5FA;font-size:22px;}
+    .nav-right{display:flex;align-items:center;gap:.75rem;}
+    .btn-edit-nav{background:transparent;color:#93C5FD;border:1.5px solid #334d80;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;}
+    .btn-edit-nav:hover{background:#1e3a8a;color:#fff;border-color:#3B82F6;}
+    .btn-edit-nav.active{background:#3B82F6;color:#fff;border-color:#3B82F6;}
+    .edit-banner{display:none;background:#1D4ED8;color:#fff;text-align:center;padding:8px 1rem;font-size:13px;font-weight:700;align-items:center;justify-content:center;gap:8px;}
+    .edit-banner.show{display:flex;}
+    .hero{background:linear-gradient(135deg,#0F1B3C 0%,#1E3A8A 60%,#1D4ED8 100%);padding:4rem 2rem 3rem;text-align:center;}
+    .hero-tag{display:inline-block;background:rgba(96,165,250,.2);color:#93C5FD;font-size:13px;font-weight:700;padding:4px 14px;border-radius:20px;margin-bottom:1rem;}
+    .hero h1{font-size:36px;font-weight:800;color:#fff;line-height:1.3;margin-bottom:.75rem;}
+    .hero h1 span{color:#60A5FA;}
+    .hero p{color:#BFDBFE;font-size:16px;max-width:520px;margin:0 auto 2rem;line-height:1.7;}
+    .search-wrap{display:flex;max-width:440px;margin:0 auto;background:#fff;border-radius:40px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.15);}
+    .search-wrap input{flex:1;border:none;padding:12px 20px;font-size:14px;font-family:'Nunito',sans-serif;outline:none;color:#1e3a5f;}
+    .search-wrap button{background:#3B82F6;border:none;padding:12px 20px;cursor:pointer;color:#fff;font-size:18px;display:flex;align-items:center;transition:background .2s;}
+    .search-wrap button:hover{background:#2563EB;}
+    .body{padding:2.5rem 2rem;max-width:960px;margin:0 auto;}
+    .stats{display:flex;gap:1rem;margin-bottom:2rem;flex-wrap:wrap;}
+    .stat{background:#fff;border:.5px solid #BFDBFE;border-radius:12px;padding:.75rem 1.25rem;flex:1;min-width:120px;text-align:center;}
+    .stat-num{font-size:24px;font-weight:800;color:#1D4ED8;}
+    .stat-label{font-size:12px;color:#64748b;font-weight:600;margin-top:2px;}
+    .filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:2rem;align-items:center;}
+    .filter-btn{border:1.5px solid #BFDBFE;background:#fff;color:#3B82F6;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;padding:6px 16px;border-radius:20px;cursor:pointer;transition:all .15s;}
+    .filter-btn:hover,.filter-btn.active{background:#3B82F6;color:#fff;border-color:#3B82F6;}
+    .btn-add-card{display:none;background:#EFF6FF;border:1.5px dashed #3B82F6;color:#3B82F6;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;padding:6px 16px;border-radius:20px;cursor:pointer;align-items:center;gap:6px;transition:all .15s;margin-left:auto;}
+    .btn-add-card:hover{background:#DBEAFE;}
+    body.edit-mode .btn-add-card{display:flex;}
+    .cat-section{margin-bottom:2.5rem;}
+    .cat-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;gap:1rem;}
+    .cat-header-left{display:flex;flex-direction:column;gap:2px;}
+    .cat-title{font-size:17px;font-weight:800;color:#0F1B3C;display:flex;align-items:center;gap:8px;}
+    .cat-title i{color:#3B82F6;font-size:20px;}
+    .cat-desc{font-size:12px;color:#64748b;font-weight:600;padding-left:28px;}
+    .btn-edit-cat{display:none;background:#EFF6FF;border:1.5px solid #BFDBFE;color:#3B82F6;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;padding:5px 12px;border-radius:12px;cursor:pointer;align-items:center;gap:4px;white-space:nowrap;transition:all .15s;flex-shrink:0;}
+    .btn-edit-cat:hover{background:#DBEAFE;border-color:#3B82F6;}
+    body.edit-mode .btn-edit-cat{display:flex;}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;min-height:80px;position:relative;}
+    body.edit-mode .grid:empty::after{content:'여기에 카드를 드래그하세요';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#94a3b8;font-size:13px;font-weight:600;pointer-events:none;}
+    .card-wrap{position:relative;}
+    .card{background:#fff;border:.5px solid #BFDBFE;border-radius:14px;padding:1.1rem 1.25rem;text-decoration:none;display:block;transition:transform .18s,box-shadow .18s,border-color .18s;}
+    .card:hover{transform:translateY(-3px);border-color:#3B82F6;box-shadow:0 6px 24px rgba(59,130,246,.15);}
+    body.edit-mode .card{border-color:#93C5FD;}
+    body.edit-mode .card:hover{transform:none;box-shadow:none;border-color:#3B82F6;}
+    .btn-delete{display:none;position:absolute;top:-8px;right:-8px;width:26px;height:26px;border-radius:50%;background:#EF4444;color:#fff;border:2px solid #fff;cursor:pointer;font-size:13px;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.18);transition:background .15s;z-index:2;}
+    .btn-delete:hover{background:#DC2626;}
+    body.edit-mode .btn-delete{display:flex;}
+    .card-top{display:flex;align-items:center;gap:10px;margin-bottom:.6rem;}
+    .icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+    .icon.work{background:#EDE9FE;color:#7C3AED;}
+    .icon.class{background:#DCFCE7;color:#16A34A;}
+    .icon.etc{background:#FEF3C7;color:#B45309;}
+    .card-name{font-size:15px;font-weight:700;color:#0F1B3C;}
+    .card-desc{font-size:13px;color:#475569;line-height:1.6;margin-bottom:.75rem;}
+    .card-footer{display:flex;align-items:center;justify-content:space-between;}
+    .card-cat{font-size:11px;font-weight:700;color:#3B82F6;background:#EFF6FF;padding:2px 8px;border-radius:6px;}
+    .card-link{font-size:12px;color:#94a3b8;display:flex;align-items:center;gap:4px;}
+    .card:hover .card-link{color:#3B82F6;}
+    .empty-state{text-align:center;padding:3rem 1rem;color:#94a3b8;font-size:15px;display:none;}
+    .empty-state i{font-size:40px;display:block;margin-bottom:.75rem;color:#BFDBFE;}
+    footer{background:#0F1B3C;text-align:center;padding:2rem;color:#60A5FA;font-size:13px;font-weight:600;}
+    .overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(15,27,60,.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;}
+    .overlay.open{display:flex;}
+    .modal{background:#fff;border-radius:20px;width:100%;max-width:460px;margin:1rem;padding:2rem;position:relative;box-shadow:0 20px 60px rgba(15,27,60,.25);animation:popIn .2s ease;max-height:90vh;overflow-y:auto;}
+    @keyframes popIn{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+    .modal-close{position:absolute;top:1rem;right:1rem;background:#EFF6FF;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3B82F6;font-size:18px;transition:background .15s;}
+    .modal-close:hover{background:#BFDBFE;}
+    .modal h2{font-size:20px;font-weight:800;color:#0F1B3C;margin-bottom:.35rem;}
+    .modal-sub{font-size:13px;color:#64748b;margin-bottom:1.5rem;}
+    /* PW */
+    .pw-icon{font-size:40px;color:#3B82F6;display:block;margin-bottom:.75rem;}
+    #pwInput{width:100%;border:1.5px solid #BFDBFE;border-radius:10px;padding:10px 14px;font-size:15px;font-family:'Nunito',sans-serif;outline:none;color:#1e3a5f;transition:border-color .2s;margin-bottom:.5rem;}
+    #pwInput:focus{border-color:#3B82F6;}
+    #pwError{font-size:12px;color:#EF4444;margin-bottom:1rem;min-height:18px;}
+    .btn-pw{width:100%;background:#3B82F6;color:#fff;border:none;border-radius:12px;padding:12px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;transition:background .2s;}
+    .btn-pw:hover{background:#2563EB;}
+    /* FORM */
+    .field{margin-bottom:1.1rem;}
+    .field label{display:block;font-size:13px;font-weight:700;color:#0F1B3C;margin-bottom:5px;}
+    .field label span{color:#EF4444;}
+    .field input,.field select,.field textarea{width:100%;border:1.5px solid #BFDBFE;border-radius:10px;padding:9px 13px;font-size:14px;font-family:'Nunito',sans-serif;outline:none;color:#1e3a5f;transition:border-color .2s;background:#fff;}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:#3B82F6;}
+    .field textarea{resize:vertical;min-height:72px;}
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;}
+    .btn-submit{width:100%;background:#3B82F6;color:#fff;border:none;border-radius:12px;padding:12px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:1.25rem;}
+    .btn-submit:hover{background:#2563EB;}
+    /* CAT EDIT */
+    .cat-edit-list{display:flex;flex-direction:column;gap:.75rem;margin-bottom:1.25rem;}
+    .cat-edit-item{background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:12px;padding:.85rem 1rem;}
+    .cat-edit-item-top{display:flex;align-items:center;gap:8px;margin-bottom:.5rem;}
+    .cat-emoji-input{width:48px;border:1.5px solid #BFDBFE;border-radius:8px;padding:4px 6px;font-size:18px;text-align:center;font-family:'Nunito',sans-serif;outline:none;background:#fff;}
+    .cat-emoji-input:focus{border-color:#3B82F6;}
+    .cat-name-input{flex:1;border:1.5px solid #BFDBFE;border-radius:8px;padding:5px 10px;font-size:14px;font-weight:700;font-family:'Nunito',sans-serif;outline:none;color:#0F1B3C;background:#fff;}
+    .cat-name-input:focus{border-color:#3B82F6;}
+    .cat-desc-input{width:100%;border:1.5px solid #BFDBFE;border-radius:8px;padding:5px 10px;font-size:12px;font-family:'Nunito',sans-serif;outline:none;color:#475569;background:#fff;}
+    .cat-desc-input:focus{border-color:#3B82F6;}
+    .cat-edit-item.dragging{opacity:0.5;}
+    .drag-handle{cursor:move;color:#94a3b8;font-size:18px;display:flex;align-items:center;margin-right:4px;}
+    .drag-handle:hover{color:#3B82F6;}
+    /* CARD DRAG */
+    body.edit-mode .card-wrap{cursor:move;}
+    .card-wrap.dragging{opacity:0.5;}
+    .grid.drag-over{background:rgba(59,130,246,0.1);border:2px dashed #3B82F6;border-radius:12px;}
+    /* SUBCAT */
+    .subcat-section{margin-left:2rem;margin-top:1.5rem;}
+    .subcat-header{display:flex;align-items:center;gap:8px;margin-bottom:.75rem;}
+    .subcat-title{font-size:14px;font-weight:700;color:#475569;}
+    .subcat-list{display:flex;flex-direction:column;gap:.5rem;margin-bottom:1rem;}
+    .subcat-item{background:#fff;border:1.5px solid #BFDBFE;border-radius:8px;padding:.6rem .8rem;display:flex;align-items:center;gap:6px;}
+    .subcat-item.dragging{opacity:0.5;}
+    .subcat-name-input{flex:1;border:1.5px solid #BFDBFE;border-radius:6px;padding:4px 8px;font-size:13px;font-weight:600;font-family:'Nunito',sans-serif;outline:none;color:#0F1B3C;background:#fff;}
+    .subcat-name-input:focus{border-color:#3B82F6;}
+    .btn-remove-subcat{background:#FEE2E2;color:#EF4444;border:none;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;transition:background .15s;}
+    .btn-remove-subcat:hover{background:#FEF2F2;}
+    .btn-add-subcat{background:#EFF6FF;border:1.5px dashed #3B82F6;color:#3B82F6;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .15s;}
+    .btn-add-subcat:hover{background:#DBEAFE;}
+    /* DELETE */
+    .btn-row{display:flex;gap:.75rem;margin-top:1.5rem;}
+    .btn-cancel{flex:1;background:#EFF6FF;color:#3B82F6;border:1.5px solid #BFDBFE;border-radius:12px;padding:11px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s;}
+    .btn-cancel:hover{background:#DBEAFE;}
+    .btn-confirm-del{flex:1;background:#EF4444;color:#fff;border:none;border-radius:12px;padding:11px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;transition:background .15s;}
+    .btn-confirm-del:hover{background:#DC2626;}
+    /* DONE */
+    .done-screen{text-align:center;padding:1rem 0;}
+    .done-screen i{font-size:52px;display:block;margin-bottom:.75rem;}
+    .done-screen h3{font-size:18px;font-weight:800;color:#0F1B3C;margin-bottom:.4rem;}
+    .done-screen p{font-size:14px;color:#64748b;}
+    @media(max-width:600px){
+      .hero h1{font-size:26px;}
+      .field-row{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo"><i class="ti ti-tools"></i>WebTool 모음</div>
+  <div class="nav-right">
+    <button class="btn-edit-nav" id="btnEditNav" onclick="toggleEditMode()">
+      <i class="ti ti-edit"></i> 도구 편집
+    </button>
+  </div>
+</nav>
+
+<div class="edit-banner" id="editBanner">
+  <i class="ti ti-pencil"></i>
+  편집 모드 — <strong style="margin:0 4px">카드 드래그</strong>로 순서 변경 및 카테고리 이동 · <strong style="margin:0 4px">✕</strong> 버튼으로 삭제 · <strong style="margin:0 4px">카테고리 편집</strong>에서 드래그로 순서 변경
+</div>
+
+<div class="hero">
+  <div class="hero-tag">✦ 개인 웹 앱 & 프로그램 모음</div>
+  <!--1. 일도 수업도, 이 한 페이지로 해결하세요. 이 부분을 '수업 업무용 웹앱, 프로그램 모음'으로 변경해줘-->
+  <h1>나만의 웹 앱 & 프로그램 컬렉션</h1>
+  <!--아래의 업무 수업 그 외 모든 상황에 딱 맞는~ 이 부분 삭제해줘-->
+  <p>내가 만든, 내가 쓰는 유용한 웹 앱과 프로그램들을 한눈에.</p>
+  <!--검색창 삭제하지마. 추가한 웹앱, 프로그램 이름이나 기능으로 검색할 수 있도록 해줘 해주세요 -->   
+  
+  <div class="search-wrap">
+    <input type="text" id="searchInput" placeholder="웹앱, 프로그램 이름이나 기능으로 검색..."/>
+    <button onclick="doSearch()"><i class="ti ti-search"></i></button>
+  </div>
+</div>
+
+<div class="body">
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="toolCount">13</div><div class="stat-label">등록된 도구</div></div>
+    <div class="stat"><div class="stat-num" id="catCount">3</div><div class="stat-label">카테고리</div></div>
+  </div>
+
+  <div class="filter-row" id="filterRow">
+    <button class="filter-btn active" onclick="filterCards('all',this)">전체</button>
+    <button class="filter-btn" onclick="filterCards('work',this)">💼 업무용</button>
+    <button class="filter-btn" onclick="filterCards('class',this)">📚 수업용</button>
+    <button class="filter-btn" onclick="filterCards('etc',this)">✨ 기타</button>
+    <button class="btn-add-card" onclick="openAddModal()"><i class="ti ti-plus"></i> 도구 추가</button>
+  </div>
+
+  <div id="sections"></div>
+  <div class="empty-state" id="emptyState">
+    <i class="ti ti-mood-empty"></i>검색 결과가 없습니다
+  </div>
+</div>
+
+<footer>© 2025 WebTool 모음 &nbsp;·&nbsp; 우측 상단 <strong style="color:#93C5FD;">도구 편집</strong>으로 카드·카테고리를 자유롭게 수정하세요 ✨</footer>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modalBox">
+    <button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button>
+
+    <!-- PW -->
+    <div id="pwScreen">
+      <i class="ti ti-lock pw-icon"></i>
+      <h2>관리자 인증</h2>
+      <p class="modal-sub">편집 모드를 사용하려면 비밀번호를 입력하세요.</p>
+      <input type="password" id="pwInput" placeholder="비밀번호 입력" maxlength="20"
+             onkeydown="if(event.key==='Enter')checkPw()"/>
+      <div id="pwError"></div>
+      <button class="btn-pw" onclick="checkPw()">확인</button>
+    </div>
+
+    <!-- ADD FORM -->
+    <div id="formScreen" style="display:none">
+      <h2>새 도구 추가</h2>
+      <p class="modal-sub">정보를 입력하면 카드가 바로 등록됩니다.</p>
+      <div class="field"><label>도구 이름 <span>*</span></label>
+        <input type="text" id="f-name" placeholder="예: Notion, Figma …"/></div>
+      <div class="field"><label>URL <span>*</span></label>
+        <input type="url" id="f-url" placeholder="https://example.com"/></div>
+      <div class="field"><label>한 줄 설명 <span>*</span></label>
+        <textarea id="f-desc" placeholder="어떤 도구인지 간단히 설명해 주세요."></textarea></div>
+      <div class="field"><label>카테고리 <span>*</span></label>
+        <select id="f-cat" onchange="updateSubcatOptions()">
+          <option value="work">💼 업무용</option>
+          <option value="class">📚 수업용</option>
+          <option value="etc">✨ 기타</option>
+        </select>
+      </div>
+      <div class="field" id="subcatField" style="display:none">
+        <label>하위 카테고리</label>
+        <select id="f-subcat">
+          <option value="">선택 안 함</option>
+        </select>
+      </div>
+      <button class="btn-submit" onclick="submitTool()"><i class="ti ti-plus"></i> 도구 추가하기</button>
+    </div>
+
+    <!-- CAT EDIT -->
+    <div id="catEditScreen" style="display:none">
+      <h2>카테고리 편집</h2>
+      <p class="modal-sub">드래그로 순서 변경 · 이모지·이름·설명 수정 · 하위 카테고리 추가/삭제</p>
+      <div class="cat-edit-list" id="catEditList"></div>
+      <button class="btn-add-subcat" onclick="addNewCategory()" type="button" style="margin-bottom:1rem"><i class="ti ti-plus"></i> 메인 카테고리 추가</button>
+      <button class="btn-submit" onclick="saveCatEdit()"><i class="ti ti-check"></i> 저장하기</button>
+    </div>
+
+    <!-- DELETE -->
+    <div id="deleteScreen" style="display:none">
+      <i class="ti ti-alert-triangle" style="font-size:48px;color:#EF4444;display:block;margin-bottom:.75rem;"></i>
+      <h2>도구를 삭제할까요?</h2>
+      <p class="modal-sub"><strong id="delName" style="color:#1D4ED8"></strong> 카드가 목록에서 제거됩니다.</p>
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeModal()">취소</button>
+        <button class="btn-confirm-del" onclick="confirmDelete()">삭제하기</button>
+      </div>
+    </div>
+
+    <!-- DONE ADD -->
+    <div class="done-screen" id="doneAddScreen" style="display:none">
+      <i class="ti ti-circle-check" style="color:#22C55E;"></i>
+      <h3>추가 완료!</h3><p>새 도구가 목록에 등록됐습니다.</p>
+    </div>
+
+    <!-- DONE DEL -->
+    <div class="done-screen" id="doneDelScreen" style="display:none">
+      <i class="ti ti-trash" style="color:#EF4444;"></i>
+      <h3>삭제 완료!</h3><p>도구가 목록에서 제거됐습니다.</p>
+    </div>
+
+    <!-- DONE CAT -->
+    <div class="done-screen" id="doneCatScreen" style="display:none">
+      <i class="ti ti-category" style="color:#3B82F6;"></i>
+      <h3>저장 완료!</h3><p>카테고리가 업데이트됐습니다.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────
+const PW = '1234';
+
+let categories = [
+  { id:'work',  emoji:'💼', name:'업무용',  desc:'생산성을 두 배로 올려줄 스마트한 업무 도구', subcategories:[] },
+  { id:'class', emoji:'📚', name:'수업용',  desc:'수업을 살아있게 만드는 교육 특화 툴 모음', subcategories:[
+    { id:'common-math1', name:'공통수학1' },
+    { id:'common-math2', name:'공통수학2' },
+    { id:'class-etc', name:'기타' }
+  ]},
+  { id:'etc',   emoji:'✨', name:'기타',    desc:'딱 잘라 말하기 어렵지만, 한번 쓰면 못 끊는 도구들', subcategories:[] },
+];
+
+let tools = [
+  { id:'t1',  cat:'work',  subcat:null, name:'ChatGPT',         url:'https://chat.openai.com',        desc:'텍스트 생성·요약·번역·코딩 보조까지. 가장 널리 쓰이는 AI 챗봇.' },
+  { id:'t2',  cat:'work',  subcat:null, name:'Claude',          url:'https://claude.ai',              desc:'긴 문서 분석·글쓰기·업무 보고서 작성에 강한 Anthropic의 AI.' },
+  { id:'t3',  cat:'work',  subcat:null, name:'Notion',          url:'https://notion.so',              desc:'메모·문서·프로젝트 관리를 하나로. 팀 협업의 중심 허브.' },
+  { id:'t4',  cat:'work',  subcat:null, name:'Gamma',           url:'https://gamma.app',              desc:'AI가 프롬프트 한 줄로 프레젠테이션을 자동 완성해주는 툴.' },
+  { id:'t5',  cat:'work',  subcat:null, name:'Perplexity AI',   url:'https://www.perplexity.ai',      desc:'실시간 웹 검색 기반 AI. 출처 포함으로 신뢰성 높은 조사 가능.' },
+  { id:'t13', cat:'work',  subcat:null, name:'창원여고 모의고사 통계 분석', url:'https://script.google.com/macros/s/AKfycbwX7kBrm9eKNu6_A3wZhbDmJICi2pH4L25WiVTNRo2H0q6cq4Enp52unF7ArdOeXPHkLw/exec', desc:'창원여고 학생들의 모의고사 성적 데이터를 통합 분석하는 웹 도구.' },
+  { id:'t6',  cat:'class', subcat:null, name:'Padlet',          url:'https://padlet.com',             desc:'학생들이 실시간으로 포스트잇처럼 의견을 붙이는 협업 보드.' },
+  { id:'t7',  cat:'class', subcat:null, name:'Kahoot!',         url:'https://kahoot.com',             desc:'게임 형식 퀴즈로 수업 참여도를 극적으로 높이는 에듀테크 대표 툴.' },
+  { id:'t8',  cat:'class', subcat:null, name:'Quizlet',         url:'https://quizlet.com',            desc:'플래시카드와 학습 게임으로 어휘·개념을 효과적으로 암기.' },
+  { id:'t9',  cat:'class', subcat:null, name:'Mentimeter',      url:'https://www.mentimeter.com',     desc:'실시간 투표·워드클라우드·Q&A로 발표와 수업을 인터랙티브하게.' },
+  { id:'t10', cat:'class', subcat:null, name:'Google Classroom', url:'https://classroom.google.com',  desc:'과제 배포·수거·채점을 한 곳에서. 구글 워크스페이스와 완벽 연동.' },
+  { id:'t11', cat:'etc',   subcat:null, name:'Canva',           url:'https://www.canva.com',          desc:'드래그 앤 드롭으로 누구나 예쁜 디자인을. 교육 인증 시 무료 업그레이드.' },
+  { id:'t12', cat:'etc',   subcat:null, name:'Gemini',          url:'https://gemini.google.com',      desc:'Google의 AI. Docs·Drive·Gmail과 연동되어 업무·학습 모두 활용 가능.' },
+];
+
+let editMode = false;
+let pendingDeleteId = null;
+let pendingAction = null;
+let _currentFilter = 'all';
+
+// ── 스크린 전환 ───────────────────────────────────────
+// 모든 스크린을 숨기고 지정된 것만 표시
+const ALL_SCREENS = ['pwScreen','formScreen','catEditScreen','deleteScreen','doneAddScreen','doneDelScreen','doneCatScreen'];
+function showOnly(id) {
+  ALL_SCREENS.forEach(s => {
+    document.getElementById(s).style.display = (s === id) ? 'block' : 'none';
+  });
+}
+
+// ── RENDER ────────────────────────────────────────────
+function render(filterCat='all', searchQ='') {
+  const wrap = document.getElementById('sections');
+  wrap.innerHTML = '';
+
+  const filtered = tools.filter(t => {
+    const catOk   = filterCat === 'all' || t.cat === filterCat;
+    const searchOk = searchQ === '' || (t.name+t.desc).toLowerCase().includes(searchQ);
+    return catOk && searchOk;
+  });
+
+  let totalVisible = 0;
+
+  categories.forEach(cat => {
+    const items = filtered.filter(t => t.cat === cat.id);
+    if (items.length === 0 && filterCat !== 'all' && filterCat !== cat.id) return;
+    totalVisible += items.length;
+
+    const sec = document.createElement('div');
+    sec.className = 'cat-section';
+    sec.dataset.cat = cat.id;
+    sec.innerHTML = `
+      <div class="cat-header">
+        <div class="cat-header-left">
+          <div class="cat-title"><i class="ti ti-category"></i>${cat.emoji} ${cat.name}</div>
+          <div class="cat-desc">${cat.desc}</div>
+        </div>
+        <button class="btn-edit-cat" onclick="openCatEdit()">
+          <i class="ti ti-pencil"></i> 카테고리 편집
+        </button>
+      </div>
+      <div id="cat-content-${cat.id}"></div>`;
+    wrap.appendChild(sec);
+
+    const content = document.getElementById('cat-content-'+cat.id);
+    
+    // 하위 카테고리가 있는 경우
+    if (cat.subcategories && cat.subcategories.length > 0) {
+      // 하위 카테고리 없는 항목들 (편집 모드에서는 빈 그리드도 표시)
+      const noSubcatItems = items.filter(t => !t.subcat);
+      if (noSubcatItems.length > 0 || editMode) {
+        const grid = document.createElement('div');
+        grid.className = 'grid';
+        grid.dataset.catId = cat.id;
+        grid.dataset.subcatId = '';
+        setupGridDrop(grid);
+        noSubcatItems.forEach(t => grid.appendChild(makeCardEl(t)));
+        content.appendChild(grid);
+      }
+      
+      // 각 하위 카테고리별 항목들 (편집 모드에서는 빈 그리드도 표시)
+      cat.subcategories.forEach(subcat => {
+        const subcatItems = items.filter(t => t.subcat === subcat.id);
+        if (subcatItems.length > 0 || editMode) {
+          const subcatSec = document.createElement('div');
+          subcatSec.className = 'subcat-section';
+          subcatSec.innerHTML = `
+            <div class="subcat-header">
+              <div class="subcat-title">📌 ${subcat.name}</div>
+            </div>
+            <div class="grid" id="subcat-grid-${subcat.id}"></div>`;
+          content.appendChild(subcatSec);
+          
+          const grid = document.getElementById('subcat-grid-'+subcat.id);
+          grid.dataset.catId = cat.id;
+          grid.dataset.subcatId = subcat.id;
+          setupGridDrop(grid);
+          subcatItems.forEach(t => grid.appendChild(makeCardEl(t)));
+        }
+      });
+    } else {
+      // 하위 카테고리가 없는 경우 기존 방식
+      const grid = document.createElement('div');
+      grid.className = 'grid';
+      grid.id = 'grid-'+cat.id;
+      grid.dataset.catId = cat.id;
+      grid.dataset.subcatId = '';
+      setupGridDrop(grid);
+      items.forEach(t => grid.appendChild(makeCardEl(t)));
+      content.appendChild(grid);
+    }
+  });
+
+  document.getElementById('toolCount').textContent = tools.length;
+  document.getElementById('catCount').textContent  = categories.length;
+  document.getElementById('emptyState').style.display = totalVisible === 0 ? 'block' : 'none';
+}
+
+function setupGridDrop(grid) {
+  grid.addEventListener('dragover', handleGridDragOver);
+  grid.addEventListener('drop', handleGridDrop);
+  grid.addEventListener('dragleave', handleGridDragLeave);
+}
+
+function makeCardEl(t) {
+  const cat = categories.find(c => c.id === t.cat);
+  const iconClass = t.cat;
+  let catLabel = cat ? cat.emoji+' '+cat.name : '';
+  
+  // 하위 카테고리가 있으면 표시
+  if (t.subcat && cat && cat.subcategories) {
+    const subcat = cat.subcategories.find(sc => sc.id === t.subcat);
+    if (subcat) {
+      catLabel += ' · ' + subcat.name;
+    }
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'card-wrap';
+  wrap.dataset.toolId = t.id;
+  
+  // 편집 모드일 때만 드래그 가능
+  if (editMode) {
+    wrap.draggable = true;
+  }
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'btn-delete';
+  delBtn.setAttribute('aria-label','삭제');
+  delBtn.innerHTML = '<i class="ti ti-x"></i>';
+  delBtn.addEventListener('click', () => askDelete(t.id));
+
+  const a = document.createElement('a');
+  a.className = 'card';
+  a.href = t.url;
+  a.target = '_blank';
+  a.innerHTML = `
+    <div class="card-top">
+      <div class="icon ${iconClass}">
+        <i class="ti ti-${iconClass==='work'?'briefcase':iconClass==='class'?'school':'sparkles'}"></i>
+      </div>
+      <span class="card-name">${esc(t.name)}</span>
+    </div>
+    <p class="card-desc">${esc(t.desc)}</p>
+    <div class="card-footer">
+      <span class="card-cat">${catLabel}</span>
+      <span class="card-link"><i class="ti ti-external-link"></i> 바로가기</span>
+    </div>`;
+
+  // 드래그 이벤트 (항상 등록하되 editMode 체크)
+  wrap.addEventListener('dragstart', handleCardDragStart);
+  wrap.addEventListener('dragend', handleCardDragEnd);
+  
+  // 링크 클릭이 편집 모드에서 방해받지 않도록
+  a.addEventListener('click', function(e) {
+    if (editMode) {
+      e.preventDefault();
+    }
+  });
+
+  wrap.appendChild(delBtn);
+  wrap.appendChild(a);
+  return wrap;
+}
+
+// ── 편집 모드 ─────────────────────────────────────────
+function toggleEditMode() {
+  if (!editMode) {
+    // 처음 진입 시에만 비밀번호 확인
+    pendingAction = 'editToggle';
+    openPwModal();
+  } else {
+    // 이미 편집 모드면 바로 종료 (비번 불필요)
+    exitEditMode();
+  }
+}
+
+function enterEditMode() {
+  editMode = true;
+  document.body.classList.add('edit-mode');
+  const btn = document.getElementById('btnEditNav');
+  btn.classList.add('active');
+  btn.innerHTML = '<i class="ti ti-x"></i> 편집 종료';
+  document.getElementById('editBanner').classList.add('show');
+}
+
+function exitEditMode() {
+  editMode = false;
+  document.body.classList.remove('edit-mode');
+  const btn = document.getElementById('btnEditNav');
+  btn.classList.remove('active');
+  btn.innerHTML = '<i class="ti ti-edit"></i> 도구 편집';
+  document.getElementById('editBanner').classList.remove('show');
+}
+
+// ── 카드 드래그 앤 드롭 ───────────────────────────────
+let draggedToolId = null;
+
+function handleCardDragStart(e) {
+  if (!editMode) {
+    e.preventDefault();
+    return;
+  }
+  draggedToolId = this.dataset.toolId;
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/html', this.innerHTML);
+}
+
+function handleCardDragEnd(e) {
+  this.classList.remove('dragging');
+  document.querySelectorAll('.grid').forEach(g => g.classList.remove('drag-over'));
+  draggedToolId = null;
+}
+
+function handleGridDragOver(e) {
+  if (!editMode || !draggedToolId) return;
+  if (e.preventDefault) e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  this.classList.add('drag-over');
+  return false;
+}
+
+function handleGridDragLeave(e) {
+  if (e.target.classList.contains('grid')) {
+    e.target.classList.remove('drag-over');
+  }
+}
+
+function handleGridDrop(e) {
+  if (!editMode || !draggedToolId) return;
+  if (e.stopPropagation) e.stopPropagation();
+  
+  this.classList.remove('drag-over');
+  
+  const targetCatId = this.dataset.catId;
+  const targetSubcatId = this.dataset.subcatId;
+  
+  // 드래그된 도구 찾기
+  const tool = tools.find(t => t.id === draggedToolId);
+  if (!tool) return;
+  
+  // 같은 위치에 드롭한 경우 아무것도 하지 않음
+  if (tool.cat === targetCatId && (tool.subcat || null) === (targetSubcatId || null)) {
+    const dropTarget = e.target.closest('.card-wrap');
+    if (!dropTarget || dropTarget.dataset.toolId === draggedToolId) {
+      render(_currentFilter);
+      return false;
+    }
+  }
+  
+  // 카테고리/하위카테고리 변경
+  const oldCat = tool.cat;
+  const oldSubcat = tool.subcat;
+  tool.cat = targetCatId;
+  tool.subcat = targetSubcatId || null;
+  
+  // 도구 재배열: 드롭된 위치의 카드들 사이에 삽입
+  const dropTarget = e.target.closest('.card-wrap');
+  if (dropTarget && dropTarget.dataset.toolId !== draggedToolId) {
+    const draggedIndex = tools.findIndex(t => t.id === draggedToolId);
+    const targetIndex = tools.findIndex(t => t.id === dropTarget.dataset.toolId);
+    
+    if (draggedIndex !== -1 && targetIndex !== -1) {
+      const [draggedTool] = tools.splice(draggedIndex, 1);
+      tools.splice(targetIndex, 0, draggedTool);
+    }
+  } else if (oldCat !== targetCatId || oldSubcat !== (targetSubcatId || null)) {
+    // 빈 그리드나 같은 카드가 아닌 곳에 드롭한 경우
+    // 해당 카테고리의 마지막으로 이동
+    const draggedIndex = tools.findIndex(t => t.id === draggedToolId);
+    if (draggedIndex !== -1) {
+      const [draggedTool] = tools.splice(draggedIndex, 1);
+      
+      // 같은 카테고리/하위카테고리의 마지막 아이템 뒤에 삽입
+      let lastIndex = -1;
+      for (let i = tools.length - 1; i >= 0; i--) {
+        if (tools[i].cat === targetCatId && (tools[i].subcat || null) === (targetSubcatId || null)) {
+          lastIndex = i;
+          break;
+        }
+      }
+      
+      if (lastIndex !== -1) {
+        tools.splice(lastIndex + 1, 0, draggedTool);
+      } else {
+        // 해당 카테고리에 아이템이 없으면 배열 끝에 추가
+        tools.push(draggedTool);
+      }
+    }
+  }
+  
+  render(_currentFilter);
+  return false;
+}
+
+// ── 모달 열기/닫기 ───────────────────────────────────
+function openOverlay() {
+  document.getElementById('overlay').classList.add('open');
+}
+
+function openPwModal() {
+  document.getElementById('pwInput').value = '';
+  document.getElementById('pwError').textContent = '';
+  showOnly('pwScreen');
+  openOverlay();
+  setTimeout(() => document.getElementById('pwInput').focus(), 80);
+}
+
+// 도구 추가: 편집 모드면 비번 없이 바로 폼 표시
+function openAddModal() {
+  if (editMode) {
+    ['f-name','f-url','f-desc'].forEach(i => document.getElementById(i).value = '');
+    document.getElementById('f-cat').value = 'work';
+    updateSubcatOptions();
+    showOnly('formScreen');
+    openOverlay();
+    setTimeout(() => document.getElementById('f-name').focus(), 80);
+  } else {
+    pendingAction = 'add';
+    openPwModal();
+  }
+}
+
+// 카테고리 편집: 편집 모드면 비번 없이 바로 편집 화면 표시
+function openCatEdit() {
+  if (editMode) {
+    buildCatEditForm();
+    showOnly('catEditScreen');
+    openOverlay();
+  } else {
+    pendingAction = 'catEdit';
+    openPwModal();
+  }
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  pendingDeleteId = null;
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('overlay')) closeModal();
+}
+
+// ── 비밀번호 확인 ─────────────────────────────────────
+function checkPw() {
+  const val = document.getElementById('pwInput').value;
+  if (val !== PW) {
+    document.getElementById('pwError').textContent = '비밀번호가 올바르지 않습니다.';
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwInput').focus();
+    return;
+  }
+
+  // 비번 통과 → 편집 모드 활성화
+  if (!editMode) enterEditMode();
+
+  // 요청했던 액션 처리
+  if (pendingAction === 'editToggle') {
+    closeModal();
+  } else if (pendingAction === 'add') {
+    ['f-name','f-url','f-desc'].forEach(i => document.getElementById(i).value = '');
+    document.getElementById('f-cat').value = 'work';
+    updateSubcatOptions();
+    showOnly('formScreen');
+    setTimeout(() => document.getElementById('f-name').focus(), 80);
+  } else if (pendingAction === 'catEdit') {
+    buildCatEditForm();
+    showOnly('catEditScreen');
+  } else if (pendingAction === 'delete') {
+    showOnly('deleteScreen');
+  }
+
+  pendingAction = null;
+}
+
+// ── 도구 추가 ─────────────────────────────────────────
+function updateSubcatOptions() {
+  const catId = document.getElementById('f-cat').value;
+  const cat = categories.find(c => c.id === catId);
+  const subcatField = document.getElementById('subcatField');
+  const subcatSelect = document.getElementById('f-subcat');
+  
+  if (cat && cat.subcategories && cat.subcategories.length > 0) {
+    subcatSelect.innerHTML = '<option value="">선택 안 함</option>';
+    cat.subcategories.forEach(sc => {
+      subcatSelect.innerHTML += `<option value="${sc.id}">${sc.name}</option>`;
+    });
+    subcatField.style.display = 'block';
+  } else {
+    subcatField.style.display = 'none';
+  }
+}
+
+function submitTool() {
+  const name  = document.getElementById('f-name').value.trim();
+  const url   = document.getElementById('f-url').value.trim();
+  const desc  = document.getElementById('f-desc').value.trim();
+  const cat   = document.getElementById('f-cat').value;
+  const subcat = document.getElementById('f-subcat').value || null;
+  if (!name || !url || !desc) { alert('이름, URL, 설명은 필수입니다.'); return; }
+  tools.push({
+    id: 'u'+Date.now(), cat, subcat, name,
+    url: url.startsWith('http') ? url : 'https://'+url,
+    desc
+  });
+  render(_currentFilter);
+  showOnly('doneAddScreen');
+  setTimeout(closeModal, 1600);
+}
+
+// ── 도구 삭제 ─────────────────────────────────────────
+function askDelete(id) {
+  pendingDeleteId = id;
+  const t = tools.find(x => x.id === id);
+  document.getElementById('delName').textContent = t ? t.name : '';
+  showOnly('deleteScreen');
+  openOverlay();
+}
+
+function confirmDelete() {
+  tools = tools.filter(t => t.id !== pendingDeleteId);
+  pendingDeleteId = null;
+  render(_currentFilter);
+  showOnly('doneDelScreen');
+  setTimeout(closeModal, 1400);
+}
+
+// ── 카테고리 편집 ─────────────────────────────────────
+let draggedCatIndex = null;
+let draggedSubcatInfo = null;
+
+function buildCatEditForm() {
+  const list = document.getElementById('catEditList');
+  list.innerHTML = '';
+  categories.forEach((cat, i) => {
+    const item = document.createElement('div');
+    item.className = 'cat-edit-item';
+    item.draggable = true;
+    item.dataset.index = i;
+    
+    let subcatHTML = '';
+    if (cat.subcategories && cat.subcategories.length > 0) {
+      subcatHTML = '<div class="subcat-list" id="subcat-list-'+i+'">';
+      cat.subcategories.forEach((sc, si) => {
+        subcatHTML += `
+          <div class="subcat-item" draggable="true" data-cat-idx="${i}" data-subcat-idx="${si}">
+            <span class="drag-handle"><i class="ti ti-grip-vertical"></i></span>
+            <input class="subcat-name-input" id="subcat-name-${i}-${si}" value="${sc.name}" placeholder="하위 카테고리"/>
+            <button class="btn-remove-subcat" onclick="removeSubcat(${i},${si})" type="button">삭제</button>
+          </div>`;
+      });
+      subcatHTML += '</div>';
+      subcatHTML += `<button class="btn-add-subcat" onclick="addSubcat(${i})" type="button"><i class="ti ti-plus"></i> 하위 카테고리 추가</button>`;
+    } else {
+      subcatHTML = `<button class="btn-add-subcat" onclick="addSubcat(${i})" type="button"><i class="ti ti-plus"></i> 하위 카테고리 추가</button>`;
+    }
+    
+    item.innerHTML = `
+      <div class="cat-edit-item-top">
+        <span class="drag-handle"><i class="ti ti-grip-vertical"></i></span>
+        <input class="cat-emoji-input" id="ce-emoji-${i}" value="${cat.emoji}" maxlength="4" title="이모지"/>
+        <input class="cat-name-input"  id="ce-name-${i}"  value="${cat.name}"  placeholder="카테고리 이름"/>
+        <button class="btn-remove-subcat" onclick="removeCategory(${i})" type="button">삭제</button>
+      </div>
+      <input class="cat-desc-input" id="ce-desc-${i}" value="${cat.desc}" placeholder="카테고리 설명 (한 줄)"/>
+      ${subcatHTML}`;
+    
+    item.addEventListener('dragstart', handleCatDragStart);
+    item.addEventListener('dragover', handleCatDragOver);
+    item.addEventListener('drop', handleCatDrop);
+    item.addEventListener('dragend', handleCatDragEnd);
+    
+    list.appendChild(item);
+    
+    // 하위 카테고리 드래그 이벤트
+    const subcatItems = item.querySelectorAll('.subcat-item');
+    subcatItems.forEach(sci => {
+      sci.addEventListener('dragstart', handleSubcatDragStart);
+      sci.addEventListener('dragover', handleSubcatDragOver);
+      sci.addEventListener('drop', handleSubcatDrop);
+      sci.addEventListener('dragend', handleSubcatDragEnd);
+    });
+  });
+}
+
+function handleCatDragStart(e) {
+  draggedCatIndex = parseInt(this.dataset.index);
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleCatDragOver(e) {
+  if (e.preventDefault) e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  return false;
+}
+
+function handleCatDrop(e) {
+  if (e.stopPropagation) e.stopPropagation();
+  const targetIndex = parseInt(this.dataset.index);
+  if (draggedCatIndex !== null && draggedCatIndex !== targetIndex) {
+    const draggedItem = categories[draggedCatIndex];
+    categories.splice(draggedCatIndex, 1);
+    categories.splice(targetIndex, 0, draggedItem);
+    buildCatEditForm();
+  }
+  return false;
+}
+
+function handleCatDragEnd(e) {
+  this.classList.remove('dragging');
+  draggedCatIndex = null;
+}
+
+function handleSubcatDragStart(e) {
+  const catIdx = parseInt(this.dataset.catIdx);
+  const subcatIdx = parseInt(this.dataset.subcatIdx);
+  draggedSubcatInfo = { catIdx, subcatIdx };
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.stopPropagation();
+}
+
+function handleSubcatDragOver(e) {
+  if (e.preventDefault) e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.stopPropagation();
+  return false;
+}
+
+function handleSubcatDrop(e) {
+  if (e.stopPropagation) e.stopPropagation();
+  const targetCatIdx = parseInt(this.dataset.catIdx);
+  const targetSubcatIdx = parseInt(this.dataset.subcatIdx);
+  
+  if (draggedSubcatInfo && draggedSubcatInfo.catIdx === targetCatIdx) {
+    const { catIdx, subcatIdx } = draggedSubcatInfo;
+    if (subcatIdx !== targetSubcatIdx) {
+      const draggedItem = categories[catIdx].subcategories[subcatIdx];
+      categories[catIdx].subcategories.splice(subcatIdx, 1);
+      categories[catIdx].subcategories.splice(targetSubcatIdx, 0, draggedItem);
+      buildCatEditForm();
+    }
+  }
+  return false;
+}
+
+function handleSubcatDragEnd(e) {
+  this.classList.remove('dragging');
+  draggedSubcatInfo = null;
+}
+
+function addSubcat(catIdx) {
+  if (!categories[catIdx].subcategories) {
+    categories[catIdx].subcategories = [];
+  }
+  const newId = 'subcat-' + Date.now();
+  categories[catIdx].subcategories.push({ id: newId, name: '새 하위 카테고리' });
+  buildCatEditForm();
+}
+
+function removeSubcat(catIdx, subcatIdx) {
+  if (confirm('이 하위 카테고리를 삭제하시겠습니까?')) {
+    categories[catIdx].subcategories.splice(subcatIdx, 1);
+    buildCatEditForm();
+  }
+}
+
+function addNewCategory() {
+  const newId = 'cat-' + Date.now();
+  categories.push({
+    id: newId,
+    emoji: '📁',
+    name: '새 카테고리',
+    desc: '카테고리 설명을 입력하세요',
+    subcategories: []
+  });
+  buildCatEditForm();
+}
+
+function removeCategory(catIdx) {
+  const cat = categories[catIdx];
+  const toolsInCat = tools.filter(t => t.cat === cat.id);
+  if (toolsInCat.length > 0) {
+    alert('이 카테고리에 도구가 ' + toolsInCat.length + '개 있어 삭제할 수 없습니다.');
+    return;
+  }
+  if (confirm(`'${cat.name}' 카테고리를 삭제하시겠습니까?`)) {
+    categories.splice(catIdx, 1);
+    buildCatEditForm();
+  }
+}
+
+function saveCatEdit() {
+  categories.forEach((cat, i) => {
+    cat.emoji = document.getElementById('ce-emoji-'+i).value.trim() || cat.emoji;
+    cat.name  = document.getElementById('ce-name-' +i).value.trim() || cat.name;
+    cat.desc  = document.getElementById('ce-desc-' +i).value.trim() || cat.desc;
+    
+    // 하위 카테고리 저장
+    if (cat.subcategories) {
+      cat.subcategories.forEach((sc, si) => {
+        const input = document.getElementById(`subcat-name-${i}-${si}`);
+        if (input) {
+          sc.name = input.value.trim() || sc.name;
+        }
+      });
+    }
+  });
+  updateFilterBtns();
+  render(_currentFilter);
+  showOnly('doneCatScreen');
+  setTimeout(closeModal, 1500);
+}
+
+function updateFilterBtns() {
+  const filterRow = document.getElementById('filterRow');
+  const allBtn = filterRow.querySelector('.filter-btn:first-child');
+  const addBtn = filterRow.querySelector('.btn-add-card');
+  
+  // 기존 카테고리 버튼 제거
+  const oldBtns = filterRow.querySelectorAll('.filter-btn:not(:first-child)');
+  oldBtns.forEach(btn => btn.remove());
+  
+  // 새 카테고리 버튼 추가
+  categories.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn';
+    btn.innerHTML = `${cat.emoji} ${cat.name}`;
+    btn.onclick = function() { filterCards(cat.id, this); };
+    filterRow.insertBefore(btn, addBtn);
+  });
+}
+
+// ── 필터 ──────────────────────────────────────────────
+function filterCards(type, btn) {
+  _currentFilter = type;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render(type);
+}
+
+// ── 검색 ──────────────────────────────────────────────
+function doSearch() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  render(_currentFilter, q);
+}
+document.getElementById('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+
+// ── 유틸 ──────────────────────────────────────────────
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ── 초기화 ────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
