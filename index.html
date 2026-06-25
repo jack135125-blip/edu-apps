@@ -302,22 +302,105 @@
 // ── DATA ─────────────────────────────────────────────
 const PW = '1234';
 
+const DEFAULT_CATEGORIES = [
+  { id:'work',  emoji:'💼', name:'업무용',  desc:'생산성을 두 배로 올려줄 스마트한 업무 도구', subcategories:[] },
+  { id:'class', emoji:'📚', name:'수업용',  desc:'수업을 살아있게 만드는 교육 특화 툴 모음', subcategories:[
+    { id:'common-math1', name:'공통수학1' },
+    { id:'common-math2', name:'공통수학2' },
+    { id:'class-etc', name:'기타' }
+  ]},
+  { id:'etc',   emoji:'✨', name:'기타',    desc:'딱 잘라 말하기 어렵지만, 한번 쓰면 못 끊는 도구들', subcategories:[] },
+];
+
+const DEFAULT_TOOLS = [
+  { id:'t1',  cat:'work',  subcat:null, name:'ChatGPT',         url:'https://chat.openai.com',        desc:'텍스트 생성·요약·번역·코딩 보조까지. 가장 널리 쓰이는 AI 챗봇.' },
+  { id:'t2',  cat:'work',  subcat:null, name:'Claude',          url:'https://claude.ai',              desc:'긴 문서 분석·글쓰기·업무 보고서 작성에 강한 Anthropic의 AI.' },
+  { id:'t3',  cat:'work',  subcat:null, name:'Notion',          url:'https://notion.so',              desc:'메모·문서·프로젝트 관리를 하나로. 팀 협업의 중심 허브.' },
+  { id:'t4',  cat:'work',  subcat:null, name:'Gamma',           url:'https://gamma.app',              desc:'AI가 프롬프트 한 줄로 프레젠테이션을 자동 완성해주는 툴.' },
+  { id:'t5',  cat:'work',  subcat:null, name:'Perplexity AI',   url:'https://www.perplexity.ai',      desc:'실시간 웹 검색 기반 AI. 출처 포함으로 신뢰성 높은 조사 가능.' },
+  { id:'t13', cat:'work',  subcat:null, name:'창원여고 모의고사 통계 분석', url:'https://script.google.com/macros/s/AKfycbwX7kBrm9eKNu6_A3wZhbDmJICi2pH4L25WiVTNRo2H0q6cq4Enp52unF7ArdOeXPHkLw/exec', desc:'창원여고 학생들의 모의고사 성적 데이터를 통합 분석하는 웹 도구.' },
+  { id:'t6',  cat:'class', subcat:null, name:'Padlet',          url:'https://padlet.com',             desc:'학생들이 실시간으로 포스트잇처럼 의견을 붙이는 협업 보드.' },
+  { id:'t7',  cat:'class', subcat:null, name:'Kahoot!',         url:'https://kahoot.com',             desc:'게임 형식 퀴즈로 수업 참여도를 극적으로 높이는 에듀테크 대표 툴.' },
+  { id:'t8',  cat:'class', subcat:null, name:'Quizlet',         url:'https://quizlet.com',            desc:'플래시카드와 학습 게임으로 어휘·개념을 효과적으로 암기.' },
+  { id:'t9',  cat:'class', subcat:null, name:'Mentimeter',      url:'https://www.mentimeter.com',     desc:'실시간 투표·워드클라우드·Q&A로 발표와 수업을 인터랙티브하게.' },
+  { id:'t10', cat:'class', subcat:null, name:'Google Classroom', url:'https://classroom.google.com',  desc:'과제 배포·수거·채점을 한 곳에서. 구글 워크스페이스와 완벽 연동.' },
+  { id:'t11', cat:'etc',   subcat:null, name:'Canva',           url:'https://www.canva.com',          desc:'드래그 앤 드롭으로 누구나 예쁜 디자인을. 교육 인증 시 무료 업그레이드.' },
+  { id:'t12', cat:'etc',   subcat:null, name:'Gemini',          url:'https://gemini.google.com',      desc:'Google의 AI. Docs·Drive·Gmail과 연동되어 업무·학습 모두 활용 가능.' },
+];
+
 let categories = [];
 let tools = [];
 
-async function loadDataFromFirestore() {
-  const { collection, getDocs } = window.firestoreApi;
+async function seedFirestoreIfEmpty() {
+  const { collection, getDocs, doc, setDoc } = window.firestoreApi;
   const categoriesCol = collection(window.firebaseDb, 'categories');
   const toolsCol = collection(window.firebaseDb, 'tools');
 
   const categorySnapshot = await getDocs(categoriesCol);
-  categories = categorySnapshot.docs.map(doc => doc.data());
+  if (categorySnapshot.empty) {
+    await Promise.all(DEFAULT_CATEGORIES.map(cat =>
+      setDoc(doc(window.firebaseDb, 'categories', cat.id), cat)
+    ));
+  }
 
   const toolSnapshot = await getDocs(toolsCol);
-  tools = toolSnapshot.docs.map(doc => doc.data());
+  if (toolSnapshot.empty) {
+    await Promise.all(DEFAULT_TOOLS.map((tool, i) =>
+      setDoc(doc(window.firebaseDb, 'tools', tool.id), { ...tool, order: i })
+    ));
+  }
+}
 
-  updateFilterBtns();
-  render();
+async function persistCategory(cat) {
+  const { doc, setDoc } = window.firestoreApi;
+  await setDoc(doc(window.firebaseDb, 'categories', cat.id), cat);
+}
+
+async function persistAllCategories() {
+  const { collection, getDocs, doc, deleteDoc } = window.firestoreApi;
+  await Promise.all(categories.map(cat => persistCategory(cat)));
+
+  const snapshot = await getDocs(collection(window.firebaseDb, 'categories'));
+  const currentIds = new Set(categories.map(c => c.id));
+  await Promise.all(
+    snapshot.docs
+      .filter(d => !currentIds.has(d.id))
+      .map(d => deleteDoc(doc(window.firebaseDb, 'categories', d.id)))
+  );
+}
+
+async function persistTool(tool, order) {
+  const { doc, setDoc } = window.firestoreApi;
+  await setDoc(doc(window.firebaseDb, 'tools', tool.id), { ...tool, order });
+}
+
+async function persistAllTools() {
+  await Promise.all(tools.map((tool, i) => persistTool(tool, i)));
+}
+
+async function deleteToolFromFirestore(id) {
+  const { doc, deleteDoc } = window.firestoreApi;
+  await deleteDoc(doc(window.firebaseDb, 'tools', id));
+}
+
+async function loadDataFromFirestore() {
+  try {
+    const { collection, getDocs } = window.firestoreApi;
+    await seedFirestoreIfEmpty();
+
+    const categorySnapshot = await getDocs(collection(window.firebaseDb, 'categories'));
+    categories = categorySnapshot.docs.map(d => d.data());
+
+    const toolSnapshot = await getDocs(collection(window.firebaseDb, 'tools'));
+    tools = toolSnapshot.docs.map(d => d.data());
+    tools.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+    updateFilterBtns();
+    render();
+  } catch (err) {
+    console.error(err);
+    alert('데이터를 불러오지 못했습니다. Firebase 설정을 확인해 주세요.');
+  }
 }
 
 let editMode = false;
@@ -617,6 +700,11 @@ function handleGridDrop(e) {
   }
   
   render(_currentFilter);
+  persistAllTools().catch(err => {
+    console.error(err);
+    alert('변경 사항 저장에 실패했습니다.');
+    loadDataFromFirestore();
+  });
   return false;
 }
 
@@ -719,18 +807,30 @@ function updateSubcatOptions() {
   }
 }
 
-function submitTool() {
+async function submitTool() {
   const name  = document.getElementById('f-name').value.trim();
   const url   = document.getElementById('f-url').value.trim();
   const desc  = document.getElementById('f-desc').value.trim();
   const cat   = document.getElementById('f-cat').value;
   const subcat = document.getElementById('f-subcat').value || null;
   if (!name || !url || !desc) { alert('이름, URL, 설명은 필수입니다.'); return; }
-  tools.push({
+
+  const newTool = {
     id: 'u'+Date.now(), cat, subcat, name,
     url: url.startsWith('http') ? url : 'https://'+url,
     desc
-  });
+  };
+  tools.push(newTool);
+
+  try {
+    await persistTool(newTool, tools.length - 1);
+  } catch (err) {
+    console.error(err);
+    tools.pop();
+    alert('도구 저장에 실패했습니다.');
+    return;
+  }
+
   render(_currentFilter);
   showOnly('doneAddScreen');
   setTimeout(closeModal, 1600);
@@ -745,12 +845,19 @@ function askDelete(id) {
   openOverlay();
 }
 
-function confirmDelete() {
-  tools = tools.filter(t => t.id !== pendingDeleteId);
-  pendingDeleteId = null;
-  render(_currentFilter);
-  showOnly('doneDelScreen');
-  setTimeout(closeModal, 1400);
+async function confirmDelete() {
+  const id = pendingDeleteId;
+  try {
+    await deleteToolFromFirestore(id);
+    tools = tools.filter(t => t.id !== id);
+    pendingDeleteId = null;
+    render(_currentFilter);
+    showOnly('doneDelScreen');
+    setTimeout(closeModal, 1400);
+  } catch (err) {
+    console.error(err);
+    alert('삭제에 실패했습니다.');
+  }
 }
 
 // ── 카테고리 편집 ─────────────────────────────────────
@@ -919,7 +1026,7 @@ function removeCategory(catIdx) {
   }
 }
 
-function saveCatEdit() {
+async function saveCatEdit() {
   categories.forEach((cat, i) => {
     cat.emoji = document.getElementById('ce-emoji-'+i).value.trim() || cat.emoji;
     cat.name  = document.getElementById('ce-name-' +i).value.trim() || cat.name;
@@ -935,6 +1042,15 @@ function saveCatEdit() {
       });
     }
   });
+
+  try {
+    await persistAllCategories();
+  } catch (err) {
+    console.error(err);
+    alert('카테고리 저장에 실패했습니다.');
+    return;
+  }
+
   updateFilterBtns();
   render(_currentFilter);
   showOnly('doneCatScreen');
