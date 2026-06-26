@@ -659,6 +659,49 @@ function exitEditMode() {
 // ── 카드 드래그 앤 드롭 ───────────────────────────────
 let draggedToolId = null;
 
+const SCROLL_EDGE_PX = 80;
+const SCROLL_MAX_SPEED = 16;
+let lastDragClientY = 0;
+let cardDragAutoScrollRaf = null;
+
+function onCardDragAutoScroll(e) {
+  e.preventDefault();
+  lastDragClientY = e.clientY;
+}
+
+function tickCardDragAutoScroll() {
+  if (!draggedToolId) {
+    cardDragAutoScrollRaf = null;
+    return;
+  }
+  const y = lastDragClientY;
+  const vh = window.innerHeight;
+  let speed = 0;
+  if (y < SCROLL_EDGE_PX) {
+    speed = -((SCROLL_EDGE_PX - y) / SCROLL_EDGE_PX) * SCROLL_MAX_SPEED;
+  } else if (y > vh - SCROLL_EDGE_PX) {
+    speed = ((y - (vh - SCROLL_EDGE_PX)) / SCROLL_EDGE_PX) * SCROLL_MAX_SPEED;
+  }
+  if (speed !== 0) window.scrollBy(0, speed);
+  cardDragAutoScrollRaf = requestAnimationFrame(tickCardDragAutoScroll);
+}
+
+function startCardDragAutoScroll() {
+  lastDragClientY = window.innerHeight / 2;
+  document.addEventListener('dragover', onCardDragAutoScroll);
+  if (!cardDragAutoScrollRaf) {
+    cardDragAutoScrollRaf = requestAnimationFrame(tickCardDragAutoScroll);
+  }
+}
+
+function stopCardDragAutoScroll() {
+  document.removeEventListener('dragover', onCardDragAutoScroll);
+  if (cardDragAutoScrollRaf) {
+    cancelAnimationFrame(cardDragAutoScrollRaf);
+    cardDragAutoScrollRaf = null;
+  }
+}
+
 function handleCardDragStart(e) {
   if (!editMode) {
     e.preventDefault();
@@ -668,9 +711,11 @@ function handleCardDragStart(e) {
   this.classList.add('dragging');
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('text/html', this.innerHTML);
+  startCardDragAutoScroll();
 }
 
 function handleCardDragEnd(e) {
+  stopCardDragAutoScroll();
   this.classList.remove('dragging');
   document.querySelectorAll('.grid').forEach(g => g.classList.remove('drag-over'));
   draggedToolId = null;
@@ -679,6 +724,7 @@ function handleCardDragEnd(e) {
 function handleGridDragOver(e) {
   if (!editMode || !draggedToolId) return;
   if (e.preventDefault) e.preventDefault();
+  lastDragClientY = e.clientY;
   e.dataTransfer.dropEffect = 'move';
   this.classList.add('drag-over');
   return false;
