@@ -295,7 +295,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-  import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+  import { getFirestore, collection, getDocs, getDoc, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -313,7 +313,7 @@
   const googleProvider = new GoogleAuthProvider();
   window.firebaseApp = app;
   window.firebaseDb = db;
-  window.firestoreApi = { collection, getDocs, doc, setDoc, deleteDoc };
+  window.firestoreApi = { collection, getDocs, getDoc, doc, setDoc, deleteDoc };
   window.firebaseAuth = { auth, googleProvider, signInWithPopup, onAuthStateChanged, signOut };
   window.dispatchEvent(new CustomEvent('firebase-ready'));
 </script>
@@ -340,7 +340,7 @@ const DEFAULT_TOOLS = [
   { id:'t3',  cat:'work',  subcat:null, name:'Notion',          url:'https://notion.so',              desc:'메모·문서·프로젝트 관리를 하나로. 팀 협업의 중심 허브.' },
   { id:'t4',  cat:'work',  subcat:null, name:'Gamma',           url:'https://gamma.app',              desc:'AI가 프롬프트 한 줄로 프레젠테이션을 자동 완성해주는 툴.' },
   { id:'t5',  cat:'work',  subcat:null, name:'Perplexity AI',   url:'https://www.perplexity.ai',      desc:'실시간 웹 검색 기반 AI. 출처 포함으로 신뢰성 높은 조사 가능.' },
-  { id:'t13', cat:'work',  subcat:null, name:'창원여고 모의고사 통계 분석', url:'https://script.google.com/macros/s/AKfycbwX7kBrm9eKNu6_A3wZhbDmJICi2pH4L25WiVTNRo2H0q6cq4Enp52unF7ArdOeXPHkLw/exec', desc:'창원여고 학생들의 모의고사 성적 데이터를 통합 분석하는 웹 도구.' },
+  { id:'t13', cat:'work',  subcat:null, name:'창원여고 모의고사 통계 분석', desc:'창원여고 학생들의 모의고사 성적 데이터를 통합 분석하는 웹 도구.', private: true },
   { id:'t6',  cat:'class', subcat:null, name:'Padlet',          url:'https://padlet.com',             desc:'학생들이 실시간으로 포스트잇처럼 의견을 붙이는 협업 보드.' },
   { id:'t7',  cat:'class', subcat:null, name:'Kahoot!',         url:'https://kahoot.com',             desc:'게임 형식 퀴즈로 수업 참여도를 극적으로 높이는 에듀테크 대표 툴.' },
   { id:'t8',  cat:'class', subcat:null, name:'Quizlet',         url:'https://quizlet.com',            desc:'플래시카드와 학습 게임으로 어휘·개념을 효과적으로 암기.' },
@@ -367,9 +367,12 @@ async function seedFirestoreIfEmpty() {
 
   const toolSnapshot = await getDocs(toolsCol);
   if (toolSnapshot.empty) {
-    await Promise.all(DEFAULT_TOOLS.map((tool, i) =>
-      setDoc(doc(window.firebaseDb, 'tools', tool.id), { ...tool, order: i })
-    ));
+    await Promise.all(DEFAULT_TOOLS.map((tool, i) => {
+      const { url, ...meta } = tool;
+      const payload = { ...meta, order: i };
+      if (!tool.private && url) payload.url = url;
+      return setDoc(doc(window.firebaseDb, 'tools', tool.id), payload);
+    }));
   }
 }
 
@@ -392,8 +395,25 @@ async function persistAllCategories() {
 }
 
 async function persistTool(tool, order) {
-  const { doc, setDoc } = window.firestoreApi;
-  await setDoc(doc(window.firebaseDb, 'tools', tool.id), { ...tool, order });
+  const { doc, setDoc, deleteDoc } = window.firestoreApi;
+  const url = tool.url || '';
+  const publicData = { ...tool, order };
+  delete publicData.url;
+
+  if (tool.private) {
+    if (url) {
+      await setDoc(doc(window.firebaseDb, 'privateUrls', tool.id), { url });
+    }
+    await setDoc(doc(window.firebaseDb, 'tools', tool.id), publicData);
+    if (url) tool.url = url;
+  } else {
+    publicData.url = url;
+    await setDoc(doc(window.firebaseDb, 'tools', tool.id), publicData);
+    try {
+      await deleteDoc(doc(window.firebaseDb, 'privateUrls', tool.id));
+    } catch (_) { /* 문서 없음 */ }
+    tool.url = url;
+  }
 }
 
 async function persistAllTools() {
@@ -403,6 +423,64 @@ async function persistAllTools() {
 async function deleteToolFromFirestore(id) {
   const { doc, deleteDoc } = window.firestoreApi;
   await deleteDoc(doc(window.firebaseDb, 'tools', id));
+  try {
+    await deleteDoc(doc(window.firebaseDb, 'privateUrls', id));
+  } catch (_) { /* 문서 없음 */ }
+}
+
+function stripPrivateUrlsFromMemory() {
+  tools.forEach(t => {
+    if (t.private) delete t.url;
+  });
+}
+
+async function fetchPrivateToolUrl(toolId) {
+  const { doc, getDoc } = window.firestoreApi;
+  const snap = await getDoc(doc(window.firebaseDb, 'privateUrls', toolId));
+  return snap.exists() ? snap.data().url : null;
+}
+
+async function migrateAndLoadPrivateUrls() {
+  if (!isCurrentUserAdmin()) return;
+  const { collection, getDocs, getDoc, doc, setDoc } = window.firestoreApi;
+
+  for (const tool of tools) {
+    if (!tool.private) continue;
+    const toolSnap = await getDoc(doc(window.firebaseDb, 'tools', tool.id));
+    if (!toolSnap.exists()) continue;
+    const data = toolSnap.data();
+    if (data.url) {
+      await setDoc(doc(window.firebaseDb, 'privateUrls', tool.id), { url: data.url });
+      const { url, ...rest } = data;
+      await setDoc(doc(window.firebaseDb, 'tools', tool.id), { ...rest, order: rest.order ?? 0 });
+    }
+  }
+
+  const snap = await getDocs(collection(window.firebaseDb, 'privateUrls'));
+  const urlMap = Object.fromEntries(snap.docs.map(d => [d.id, d.data().url]));
+  tools.forEach(t => {
+    if (t.private) {
+      if (urlMap[t.id]) t.url = urlMap[t.id];
+      else delete t.url;
+    }
+  });
+}
+
+async function applyPrivateUrlVisibility() {
+  if (isCurrentUserAdmin()) {
+    await migrateAndLoadPrivateUrls();
+  } else {
+    stripPrivateUrlsFromMemory();
+  }
+}
+
+async function openPrivateUrl(toolId) {
+  let url = null;
+  const tool = tools.find(t => t.id === toolId);
+  if (tool && tool.url) url = tool.url;
+  if (!url) url = await fetchPrivateToolUrl(toolId);
+  if (url) window.open(url, '_blank', 'noopener');
+  else alert('링크를 불러올 수 없습니다.');
 }
 
 async function loadDataFromFirestore() {
@@ -424,6 +502,7 @@ async function loadDataFromFirestore() {
     const toolSnapshot = await getDocs(collection(window.firebaseDb, 'tools'));
     tools = toolSnapshot.docs.map(d => d.data());
     tools.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    await applyPrivateUrlVisibility();
 
     updateFilterBtns();
     render();
@@ -838,7 +917,7 @@ function openPrivateLink(toolId) {
   const tool = tools.find(t => t.id === toolId);
   if (!tool) return;
   if (isCurrentUserAdmin()) {
-    window.open(tool.url, '_blank', 'noopener');
+    openPrivateUrl(toolId);
     return;
   }
   pendingAction = 'privateLink';
@@ -905,7 +984,7 @@ function updateNavAuthUI() {
 function initAuthListener() {
   if (!window.firebaseAuth) return;
   const { auth, onAuthStateChanged, signOut } = window.firebaseAuth;
-  onAuthStateChanged(auth, user => {
+  onAuthStateChanged(auth, async user => {
     if (user && isAdminEmail(user.email)) {
       currentAdminUser = user;
     } else {
@@ -915,7 +994,9 @@ function initAuthListener() {
       }
       if (editMode) exitEditMode();
     }
+    await applyPrivateUrlVisibility();
     updateNavAuthUI();
+    render(_currentFilter);
   });
 }
 
@@ -932,7 +1013,8 @@ async function signInWithGoogle() {
     }
     currentAdminUser = result.user;
     updateNavAuthUI();
-    processPendingActionAfterAuth();
+    await applyPrivateUrlVisibility();
+    await processPendingActionAfterAuth();
   } catch (err) {
     console.error(err);
     if (err.code === 'auth/popup-closed-by-user') return;
@@ -946,19 +1028,20 @@ async function signOutAdmin() {
     if (editMode) exitEditMode();
     await window.firebaseAuth.signOut(window.firebaseAuth.auth);
     currentAdminUser = null;
+    stripPrivateUrlsFromMemory();
     updateNavAuthUI();
+    render(_currentFilter);
   } catch (err) {
     console.error(err);
     alert('로그아웃에 실패했습니다.');
   }
 }
 
-function processPendingActionAfterAuth() {
+async function processPendingActionAfterAuth() {
   const action = pendingAction;
 
   if (action === 'privateLink') {
-    const tool = tools.find(t => t.id === pendingPrivateToolId);
-    if (tool) window.open(tool.url, '_blank', 'noopener');
+    await openPrivateUrl(pendingPrivateToolId);
     closeModal();
     return;
   }
@@ -989,7 +1072,7 @@ function populateCatSelect() {
   ).join('');
 }
 
-function openToolForm(toolId) {
+async function openToolForm(toolId) {
   editingToolId = toolId || null;
   populateCatSelect();
 
@@ -1000,11 +1083,16 @@ function openToolForm(toolId) {
   if (toolId) {
     const tool = tools.find(t => t.id === toolId);
     if (!tool) return;
+    let url = tool.url || '';
+    if (tool.private && !url && isCurrentUserAdmin()) {
+      url = await fetchPrivateToolUrl(toolId) || '';
+      if (url) tool.url = url;
+    }
     titleEl.textContent = '도구 편집';
     subEl.textContent = '이름, URL, 설명, 카테고리를 수정할 수 있습니다.';
     btnEl.innerHTML = '<i class="ti ti-check"></i> 저장하기';
     document.getElementById('f-name').value = tool.name;
-    document.getElementById('f-url').value = tool.url;
+    document.getElementById('f-url').value = url;
     document.getElementById('f-desc').value = tool.desc;
     document.getElementById('f-cat').value = tool.cat;
     document.getElementById('f-private').checked = !!tool.private;
