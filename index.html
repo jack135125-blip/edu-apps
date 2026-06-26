@@ -88,13 +88,15 @@
     .modal-close:hover{background:#BFDBFE;}
     .modal h2{font-size:20px;font-weight:800;color:#0F1B3C;margin-bottom:.35rem;}
     .modal-sub{font-size:13px;color:#64748b;margin-bottom:1.5rem;}
-    /* PW */
+    /* AUTH */
     .pw-icon{font-size:40px;color:#3B82F6;display:block;margin-bottom:.75rem;}
-    #pwInput{width:100%;border:1.5px solid #BFDBFE;border-radius:10px;padding:10px 14px;font-size:15px;font-family:'Nunito',sans-serif;outline:none;color:#1e3a5f;transition:border-color .2s;margin-bottom:.5rem;}
-    #pwInput:focus{border-color:#3B82F6;}
-    #pwError{font-size:12px;color:#EF4444;margin-bottom:1rem;min-height:18px;}
-    .btn-pw{width:100%;background:#3B82F6;color:#fff;border:none;border-radius:12px;padding:12px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;transition:background .2s;}
-    .btn-pw:hover{background:#2563EB;}
+    #authError{font-size:12px;color:#EF4444;margin-bottom:1rem;min-height:18px;}
+    .btn-google{width:100%;background:#fff;color:#1e3a5f;border:1.5px solid #BFDBFE;border-radius:12px;padding:12px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px;}
+    .btn-google:hover{background:#F8FAFC;border-color:#3B82F6;}
+    .btn-google i{font-size:20px;color:#EA4335;}
+    .btn-logout-nav{background:transparent;color:#93C5FD;border:1.5px solid #334d80;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;cursor:pointer;display:none;align-items:center;gap:6px;transition:all .2s;}
+    .btn-logout-nav.show{display:flex;}
+    .btn-logout-nav:hover{background:#1e3a8a;color:#fff;border-color:#3B82F6;}
     /* FORM */
     .field{margin-bottom:1.1rem;}
     .field label{display:block;font-size:13px;font-weight:700;color:#0F1B3C;margin-bottom:5px;}
@@ -157,6 +159,9 @@
 <nav>
   <div class="logo"><i class="ti ti-tools"></i>WebTool 모음</div>
   <div class="nav-right">
+    <button class="btn-logout-nav" id="btnLogoutNav" onclick="signOutAdmin()" title="관리자 로그아웃">
+      <i class="ti ti-logout"></i> 로그아웃
+    </button>
     <button class="btn-edit-nav" id="btnEditNav" onclick="toggleEditMode()">
       <i class="ti ti-edit"></i> 도구 편집
     </button>
@@ -209,15 +214,15 @@
   <div class="modal" id="modalBox">
     <button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button>
 
-    <!-- PW -->
-    <div id="pwScreen">
+    <!-- AUTH -->
+    <div id="authScreen">
       <i class="ti ti-lock pw-icon"></i>
-      <h2 id="pwTitle">관리자 인증</h2>
-      <p class="modal-sub" id="pwSub">편집 모드를 사용하려면 비밀번호를 입력하세요.</p>
-      <input type="password" id="pwInput" placeholder="비밀번호 입력" maxlength="20"
-             onkeydown="if(event.key==='Enter')checkPw()"/>
-      <div id="pwError"></div>
-      <button class="btn-pw" onclick="checkPw()">확인</button>
+      <h2 id="authTitle">관리자 인증</h2>
+      <p class="modal-sub" id="authSub">편집 모드를 사용하려면 Google 계정으로 로그인하세요.</p>
+      <div id="authError"></div>
+      <button class="btn-google" type="button" onclick="signInWithGoogle()">
+        <i class="ti ti-brand-google"></i> Google로 로그인
+      </button>
     </div>
 
     <!-- ADD / EDIT FORM -->
@@ -242,7 +247,7 @@
       <div class="field field-checkbox">
         <label class="checkbox-label">
           <input type="checkbox" id="f-private"/>
-          <span><i class="ti ti-lock"></i> 관리자 전용 (비밀번호 필요 시에만 열림)</span>
+          <span><i class="ti ti-lock"></i> 관리자 전용 (Google 로그인 필요)</span>
         </label>
       </div>
       <button class="btn-submit" id="formSubmitBtn" onclick="submitTool()"><i class="ti ti-plus"></i> 도구 추가하기</button>
@@ -291,6 +296,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
   import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDW0MpN_XIlJaWqpNmnxFUzsFoaz2W8EMw",
@@ -303,15 +309,20 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  const auth = getAuth(app);
+  const googleProvider = new GoogleAuthProvider();
   window.firebaseApp = app;
   window.firebaseDb = db;
   window.firestoreApi = { collection, getDocs, doc, setDoc, deleteDoc };
+  window.firebaseAuth = { auth, googleProvider, signInWithPopup, onAuthStateChanged, signOut };
   window.dispatchEvent(new CustomEvent('firebase-ready'));
 </script>
 
 <script>
 // ── DATA ─────────────────────────────────────────────
-const PW = 'tngkr123';
+const ADMIN_EMAILS = ['jack135125@gmail.com'];
+
+let currentAdminUser = null;
 
 const DEFAULT_CATEGORIES = [
   { id:'work',  emoji:'💼', name:'업무용',  desc:'생산성을 두 배로 올려줄 스마트한 업무 도구', subcategories:[] },
@@ -431,7 +442,7 @@ let _currentFilter = 'all';
 
 // ── 스크린 전환 ───────────────────────────────────────
 // 모든 스크린을 숨기고 지정된 것만 표시
-const ALL_SCREENS = ['pwScreen','formScreen','catEditScreen','deleteScreen','doneSaveScreen','doneDelScreen','doneCatScreen'];
+const ALL_SCREENS = ['authScreen','formScreen','catEditScreen','deleteScreen','doneSaveScreen','doneDelScreen','doneCatScreen'];
 function showOnly(id) {
   ALL_SCREENS.forEach(s => {
     document.getElementById(s).style.display = (s === id) ? 'block' : 'none';
@@ -601,7 +612,7 @@ function makeCardEl(t) {
     }
     if (isPrivate) {
       e.preventDefault();
-      openPrivateLinkModal(t.id);
+      openPrivateLink(t.id);
     }
   });
 
@@ -629,11 +640,13 @@ async function toggleToolPrivate(id) {
 // ── 편집 모드 ─────────────────────────────────────────
 function toggleEditMode() {
   if (!editMode) {
-    // 처음 진입 시에만 비밀번호 확인
+    if (isCurrentUserAdmin()) {
+      enterEditMode();
+      return;
+    }
     pendingAction = 'editToggle';
-    openPwModal();
+    openAuthModal();
   } else {
-    // 이미 편집 모드면 바로 종료 (비번 불필요)
     exitEditMode();
   }
 }
@@ -813,38 +826,40 @@ function openOverlay() {
   document.getElementById('overlay').classList.add('open');
 }
 
-function openPwModal(title, sub) {
-  document.getElementById('pwTitle').textContent = title || '관리자 인증';
-  document.getElementById('pwSub').textContent = sub || '편집 모드를 사용하려면 비밀번호를 입력하세요.';
-  document.getElementById('pwInput').value = '';
-  document.getElementById('pwError').textContent = '';
-  showOnly('pwScreen');
+function openAuthModal(title, sub) {
+  document.getElementById('authTitle').textContent = title || '관리자 인증';
+  document.getElementById('authSub').textContent = sub || '편집 모드를 사용하려면 Google 계정으로 로그인하세요.';
+  document.getElementById('authError').textContent = '';
+  showOnly('authScreen');
   openOverlay();
-  setTimeout(() => document.getElementById('pwInput').focus(), 80);
 }
 
-function openPrivateLinkModal(toolId) {
+function openPrivateLink(toolId) {
   const tool = tools.find(t => t.id === toolId);
   if (!tool) return;
+  if (isCurrentUserAdmin()) {
+    window.open(tool.url, '_blank', 'noopener');
+    return;
+  }
   pendingAction = 'privateLink';
   pendingPrivateToolId = toolId;
-  openPwModal(
+  openAuthModal(
     '관리자 전용 도구',
-    `"${tool.name}"을(를) 열려면 비밀번호를 입력하세요.`
+    `"${tool.name}"을(를) 열려면 관리자 Google 계정으로 로그인하세요.`
   );
 }
 
-// 도구 추가: 편집 모드면 비번 없이 바로 폼 표시
+// 도구 추가: 편집 모드면 바로 폼 표시
 function openAddModal() {
   if (editMode) {
     openToolForm(null);
   } else {
     pendingAction = 'add';
-    openPwModal();
+    openAuthModal('관리자 인증', '도구를 추가하려면 Google 계정으로 로그인하세요.');
   }
 }
 
-// 카테고리 편집: 편집 모드면 비번 없이 바로 편집 화면 표시
+// 카테고리 편집: 편집 모드면 바로 편집 화면 표시
 function openCatEdit() {
   if (editMode) {
     buildCatEditForm();
@@ -852,7 +867,7 @@ function openCatEdit() {
     openOverlay();
   } else {
     pendingAction = 'catEdit';
-    openPwModal();
+    openAuthModal('관리자 인증', '카테고리를 편집하려면 Google 계정으로 로그인하세요.');
   }
 }
 
@@ -868,36 +883,99 @@ function handleOverlayClick(e) {
   if (e.target === document.getElementById('overlay')) closeModal();
 }
 
-// ── 비밀번호 확인 ─────────────────────────────────────
-function checkPw() {
-  const val = document.getElementById('pwInput').value;
-  if (val !== PW) {
-    document.getElementById('pwError').textContent = '비밀번호가 올바르지 않습니다.';
-    document.getElementById('pwInput').value = '';
-    document.getElementById('pwInput').focus();
-    return;
-  }
+// ── Google 인증 ───────────────────────────────────────
+function isAdminEmail(email) {
+  return !!email && ADMIN_EMAILS.includes(email.toLowerCase());
+}
 
-  // 비공개 링크 열기 — 편집 모드 전환 없음
-  if (pendingAction === 'privateLink') {
+function isCurrentUserAdmin() {
+  return currentAdminUser !== null;
+}
+
+function updateNavAuthUI() {
+  const btn = document.getElementById('btnLogoutNav');
+  if (isCurrentUserAdmin()) {
+    btn.classList.add('show');
+    btn.title = currentAdminUser.email + ' (관리자)';
+  } else {
+    btn.classList.remove('show');
+  }
+}
+
+function initAuthListener() {
+  if (!window.firebaseAuth) return;
+  const { auth, onAuthStateChanged, signOut } = window.firebaseAuth;
+  onAuthStateChanged(auth, user => {
+    if (user && isAdminEmail(user.email)) {
+      currentAdminUser = user;
+    } else {
+      currentAdminUser = null;
+      if (user && !isAdminEmail(user.email)) {
+        signOut(auth);
+      }
+      if (editMode) exitEditMode();
+    }
+    updateNavAuthUI();
+  });
+}
+
+async function signInWithGoogle() {
+  const errEl = document.getElementById('authError');
+  errEl.textContent = '';
+  try {
+    const { auth, googleProvider, signInWithPopup } = window.firebaseAuth;
+    const result = await signInWithPopup(auth, googleProvider);
+    if (!isAdminEmail(result.user.email)) {
+      await window.firebaseAuth.signOut(auth);
+      errEl.textContent = '등록된 관리자 계정만 사용할 수 있습니다.';
+      return;
+    }
+    currentAdminUser = result.user;
+    updateNavAuthUI();
+    processPendingActionAfterAuth();
+  } catch (err) {
+    console.error(err);
+    if (err.code === 'auth/popup-closed-by-user') return;
+    errEl.textContent = '로그인에 실패했습니다. 다시 시도해 주세요.';
+  }
+}
+
+async function signOutAdmin() {
+  if (!window.firebaseAuth) return;
+  try {
+    if (editMode) exitEditMode();
+    await window.firebaseAuth.signOut(window.firebaseAuth.auth);
+    currentAdminUser = null;
+    updateNavAuthUI();
+  } catch (err) {
+    console.error(err);
+    alert('로그아웃에 실패했습니다.');
+  }
+}
+
+function processPendingActionAfterAuth() {
+  const action = pendingAction;
+
+  if (action === 'privateLink') {
     const tool = tools.find(t => t.id === pendingPrivateToolId);
     if (tool) window.open(tool.url, '_blank', 'noopener');
     closeModal();
     return;
   }
 
-  // 편집 관련 액션만 편집 모드 활성화
   if (!editMode) enterEditMode();
 
-  if (pendingAction === 'editToggle') {
+  if (action === 'editToggle') {
     closeModal();
-  } else if (pendingAction === 'add') {
+  } else if (action === 'add') {
     openToolForm(null);
-  } else if (pendingAction === 'catEdit') {
+  } else if (action === 'catEdit') {
     buildCatEditForm();
     showOnly('catEditScreen');
-  } else if (pendingAction === 'delete') {
+  } else if (action === 'delete') {
     showOnly('deleteScreen');
+  } else {
+    closeModal();
   }
 
   pendingAction = null;
@@ -1288,6 +1366,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 
 // ── 초기화 ────────────────────────────────────────────
 function startApp() {
+  initAuthListener();
   loadDataFromFirestore();
 }
 window.addEventListener('firebase-ready', startApp);
