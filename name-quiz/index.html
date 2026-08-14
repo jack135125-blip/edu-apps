@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>이름 외우기 ♪ 학급 사진 퀴즈</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Nunito:wght@500;700;800&family=Noto+Sans+KR:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./app.css" />
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="eyebrow">선생님을 위한 이름 암기장</div>
+        <h1>이름 외우기</h1>
+        <p>사진 명렬표를 불러오고, 귀여운 퀴즈로 학생 이름을 하나씩 익혀 보세요.</p>
+      </div>
+      <div class="top-actions" id="home-actions">
+        <button class="btn btn-secondary" id="btn-manual">빈 학급 만들기</button>
+        <button class="btn btn-primary" id="btn-import">엑셀 불러오기</button>
+      </div>
+    </header>
+
+    <!-- HOME -->
+    <section class="panel view active" id="view-home">
+      <div class="panel-inner">
+        <div class="section-head">
+          <div>
+            <h2>내 학급</h2>
+            <p>이 컴퓨터 브라우저에 저장돼요. 반드시 <strong>NameQuiz / start</strong>로 실행해 주세요. (주소가 바뀌면 데이터가 안 보여요)</p>
+          </div>
+        </div>
+        <div id="home-empty" class="empty hidden">
+          <strong>아직 학급이 없어요</strong>
+          오른쪽 위 ‘엑셀 불러오기’로 사진 명렬표를 가져와 볼까요?
+        </div>
+        <div class="grid-classes" id="class-grid"></div>
+      </div>
+    </section>
+
+    <!-- CLASS -->
+    <section class="panel view" id="view-class">
+      <div class="panel-inner">
+        <div class="section-head">
+          <div>
+            <button class="btn btn-ghost btn-sm" id="btn-back-home" style="margin-bottom:10px">← 학급 목록</button>
+            <h2 id="class-title">학급</h2>
+            <p id="class-sub"></p>
+          </div>
+          <div class="toolbar">
+            <button class="btn btn-ghost btn-sm" id="btn-edit-class">학급 편집</button>
+            <button class="btn btn-danger btn-sm" id="btn-delete-class">삭제</button>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button class="tab active" data-tab="quiz">퀴즈</button>
+          <button class="tab" data-tab="students">학생 명단</button>
+          <button class="tab" data-tab="stats">학습 현황</button>
+        </div>
+
+        <div data-panel="quiz">
+          <div id="quiz-summary"></div>
+          <div class="mode-grid" id="mode-grid"></div>
+        </div>
+
+        <div data-panel="students" class="hidden">
+          <div class="toolbar" style="margin-bottom:12px">
+            <button class="btn btn-primary btn-sm" id="btn-add-student">학생 추가</button>
+          </div>
+          <div style="overflow:auto">
+            <table class="student-table">
+              <thead>
+                <tr>
+                  <th>번호</th>
+                  <th>사진</th>
+                  <th>이름</th>
+                  <th>시도</th>
+                  <th>정답률</th>
+                  <th>오답</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="student-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div data-panel="stats" class="hidden">
+          <div id="stats-overview"></div>
+          <div class="toolbar" style="margin-top:18px">
+            <button class="btn btn-primary" id="btn-weak-quiz">약한 학생만 퀴즈</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUIZ -->
+    <section class="panel view" id="view-quiz">
+      <div class="panel-inner">
+        <div class="section-head">
+          <div>
+            <button class="btn btn-ghost btn-sm" id="btn-back-class" style="margin-bottom:10px">← 돌아가기</button>
+            <h2 id="quiz-mode-label">퀴즈</h2>
+            <p>틀릴수록 나중에 더 자주 나와요. 천천히 익혀 봐요!</p>
+          </div>
+        </div>
+        <div class="quiz-progress">
+          <span id="quiz-progress-text">1 / 10</span>
+          <span id="quiz-score-live">정답 0 / 0</span>
+        </div>
+        <div class="progress-bar"><span id="quiz-progress-bar"></span></div>
+        <div class="quiz-stage" id="quiz-stage"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Import modal -->
+  <div class="modal-backdrop" id="import-modal">
+    <div class="modal">
+      <h3>엑셀 명렬표 불러오기</h3>
+      <p class="sub">사진이 들어 있는 명렬표(.xlsx)를 넣으면 이름과 사진을 자동으로 맞춰 줘요.</p>
+      <div class="dropzone" id="dropzone">
+        <strong>여기로 파일을 가져와 주세요</strong>
+        클릭해도 선택할 수 있어요
+      </div>
+      <input type="file" id="import-file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
+      <p id="import-status" style="margin-top:12px;font-size:13px;color:var(--muted);min-height:20px"></p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="import-cancel">닫기</button>
+        <button class="btn btn-ghost hidden" id="import-close">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit class -->
+  <div class="modal-backdrop" id="edit-class-modal">
+    <div class="modal">
+      <h3>학급 편집</h3>
+      <p class="sub">표시 이름과 기본 정보를 수정합니다.</p>
+      <div class="form-grid">
+        <div class="field" style="grid-column:1/-1">
+          <label>학급 이름</label>
+          <input id="edit-name" />
+        </div>
+        <div class="field">
+          <label>학교</label>
+          <input id="edit-school" />
+        </div>
+        <div class="field">
+          <label>담당 교사</label>
+          <input id="edit-teacher" />
+        </div>
+        <div class="field">
+          <label>학년</label>
+          <input id="edit-grade" type="number" />
+        </div>
+        <div class="field">
+          <label>반</label>
+          <input id="edit-classnum" type="number" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="edit-class-cancel">취소</button>
+        <button class="btn btn-primary" id="edit-class-save">저장</button>
+        <button class="hidden" id="edit-class-close"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit student -->
+  <div class="modal-backdrop" id="edit-student-modal">
+    <div class="modal">
+      <h3>학생 편집</h3>
+      <p class="sub">이름·번호·사진을 수정할 수 있습니다.</p>
+      <input type="hidden" id="edit-stu-id" />
+      <div class="form-grid">
+        <div class="field">
+          <label>번호</label>
+          <input id="edit-stu-number" type="number" />
+        </div>
+        <div class="field">
+          <label>이름</label>
+          <input id="edit-stu-name" />
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label>사진</label>
+          <div class="edit-photo-wrap">
+            <img id="edit-stu-preview" class="avatar hidden" alt="" />
+            <input id="edit-stu-photo" type="file" accept="image/*" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-danger" id="edit-student-delete">삭제</button>
+        <button class="btn btn-ghost" id="edit-student-cancel">취소</button>
+        <button class="btn btn-primary" id="edit-student-save">저장</button>
+        <button class="hidden" id="edit-student-close"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manual class -->
+  <div class="modal-backdrop" id="manual-modal">
+    <div class="modal">
+      <h3>빈 학급 만들기</h3>
+      <p class="sub">엑셀 없이 직접 학생을 추가할 수 있습니다.</p>
+      <div class="form-grid">
+        <div class="field" style="grid-column:1/-1">
+          <label>학급 이름</label>
+          <input id="manual-name" placeholder="예: 미적분Ⅰ 2-2" />
+        </div>
+        <div class="field">
+          <label>학교</label>
+          <input id="manual-school" />
+        </div>
+        <div class="field">
+          <label>담당 교사</label>
+          <input id="manual-teacher" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="manual-cancel">취소</button>
+        <button class="btn btn-primary" id="manual-save">만들기</button>
+        <button class="hidden" id="manual-close"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

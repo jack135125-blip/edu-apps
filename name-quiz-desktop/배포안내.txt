@@ -1,0 +1,24 @@
+배포 안내 (데스크톱 버전)
+========================
+
+■ 이 버전의 장점
+  - Python / 브라우저 / 주소 입력 불필요
+  - NameQuiz.exe 더블클릭만 하면 실행
+  - 데이터는 PC에 파일로 저장 (껐다 켜도 유지)
+
+■ 교사에게 배포하는 방법
+  1) dist\NameQuiz 폴더 전체를 USB/클라우드로 전달
+  2) 받는 선생님은 NameQuiz.exe 더블클릭
+
+■ 개발자 PC에서 다시 빌드
+  build_exe.bat 더블클릭
+
+■ 개발 모드로 바로 실행
+  실행.bat 또는 python main.py
+
+■ 데이터 위치
+  C:\Users\사용자이름\AppData\Roaming\NameQuiz\
+
+■ 설치 파일(Setup.exe)이 필요하면
+  Inno Setup 등으로 dist\NameQuiz 폴더를 설치 프로그램으로 묶을 수 있습니다.
+  원하시면 설치 스크립트도 만들어 드립니다.
