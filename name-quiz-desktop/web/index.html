@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>이름 외우기</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-screen="home">
+  <div class="blobs" aria-hidden="true">
+    <span class="blob blob-a"></span>
+    <span class="blob blob-b"></span>
+    <span class="blob blob-c"></span>
+  </div>
+
+  <div class="app">
+    <header class="top">
+      <div class="brand">
+        <span class="badge">선생님을 위한 이름 암기장</span>
+        <h1 id="appTitle">이름 외우기</h1>
+        <p class="sub" id="appSub">사진 명렬표를 불러오고, 퀴즈로 학생 이름을 익혀 보세요.</p>
+      </div>
+      <div class="top-actions home-only">
+        <button class="btn btn-sky" type="button" id="btnBlank">빈 학급</button>
+        <button class="btn btn-peach" type="button" id="btnImport">엑셀 불러오기</button>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="screen active" data-screen="home" id="screenHome"></section>
+      <section class="screen" data-screen="class" id="screenClass"></section>
+      <section class="screen" data-screen="quiz" id="screenQuiz"></section>
+    </main>
+  </div>
+
+  <div class="drop-overlay" id="dropOverlay" hidden>
+    <div class="drop-card">
+      <strong>엑셀 명렬표를 놓으세요</strong>
+      <p>xlsx 파일을 여기에 떨어뜨리면 학급이 만들어집니다.</p>
+    </div>
+  </div>
+
+  <div class="modal-root" id="modalRoot" hidden>
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal" role="dialog" aria-modal="true" id="modalBox"></div>
+  </div>
+
+  <div class="toasts" id="toasts"></div>
+  <div class="busy" id="busy" hidden>
+    <div class="spinner"></div>
+    <p>불러오는 중…</p>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

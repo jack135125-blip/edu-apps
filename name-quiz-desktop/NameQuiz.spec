@@ -1,11 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('assets/fonts', 'assets/fonts')]
+datas = [('web', 'web')]
 binaries = []
-hiddenimports = ['PIL._tkinter_finder']
-tmp_ret = collect_all('customtkinter')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+hiddenimports = ['app.api', 'app.storage', 'app.quiz', 'app.excel_import']
+tmp_ret = collect_all('webview')
+datas += tmp_ret[0]
+binaries += tmp_ret[1]
+hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
@@ -17,7 +19,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=['customtkinter', 'tkinterdnd2'],
     noarchive=False,
     optimize=0,
 )
