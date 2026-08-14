@@ -16,6 +16,15 @@ MODES = [
     ("dueReview", "복습 대기", "복습 타이밍이 된 친구만 다시 만나요."),
 ]
 
+OVERVIEW_MODES = [mode for mode in MODES if mode[0] in ("photoToName", "nameToPhoto", "practice", "typeName")]
+MASTERY_STREAK = 3
+OVERVIEW_GROUPS = {
+    "students": ("전체 학생", "모든 학급의 학생입니다. 아래에서 퀴즈 방식을 골라 진행하세요."),
+    "weak": ("약한 학생", "정답률이 70% 미만인 학생입니다. 아래에서 퀴즈 방식을 골라 진행하세요."),
+    "due": ("복습", "복습 타이밍이 된 학생입니다. 아래에서 퀴즈 방식을 골라 진행하세요."),
+    "mastered": ("잘 맞춤", "연속 3회 정확하게 맞춘 학생입니다. 이 명단 퀴즈에서 틀리면 바로 빠집니다."),
+}
+
 
 def ensure_stats(student: dict[str, Any]) -> dict[str, Any]:
     if not student.get("stats"):
@@ -64,6 +73,42 @@ def get_due_students(students: list[dict]) -> list[dict]:
     ]
     due.sort(key=lambda s: ensure_stats(s)["nextReview"])
     return due
+
+
+def is_weak_counted(student: dict[str, Any]) -> bool:
+    s = ensure_stats(student)
+    return s["seen"] > 0 and s["correct"] / s["seen"] < 0.7
+
+
+def is_due_counted(student: dict[str, Any]) -> bool:
+    now = int(time.time() * 1000)
+    s = ensure_stats(student)
+    return s.get("nextReview", 0) > 0 and s["nextReview"] <= now
+
+
+def is_mastered_student(student: dict[str, Any]) -> bool:
+    return ensure_stats(student).get("streak", 0) >= MASTERY_STREAK
+
+
+def get_mastered_students(students: list[dict]) -> list[dict]:
+    pool = [st for st in students if is_mastered_student(st)]
+    pool.sort(
+        key=lambda st: (
+            -ensure_stats(st).get("streak", 0),
+            (st.get("name") or "").strip().casefold(),
+        )
+    )
+    return pool
+
+
+def filter_overview_group(students: list[dict], group: str) -> list[dict]:
+    if group == "weak":
+        return [st for st in students if is_weak_counted(st)]
+    if group == "due":
+        return [st for st in students if is_due_counted(st)]
+    if group == "mastered":
+        return get_mastered_students(students)
+    return list(students)
 
 
 def apply_review(student: dict[str, Any], quality: int) -> dict[str, Any]:
@@ -124,7 +169,7 @@ def names_match(a: str, b: str) -> bool:
 
 
 def class_summary(students: list[dict]) -> dict[str, Any]:
-    seen = correct = weak = due = 0
+    seen = correct = weak = due = mastered = 0
     now = int(time.time() * 1000)
     for st in students:
         s = ensure_stats(st)
@@ -134,11 +179,14 @@ def class_summary(students: list[dict]) -> dict[str, Any]:
             weak += 1
         if s.get("nextReview", 0) > 0 and s["nextReview"] <= now:
             due += 1
+        if s.get("streak", 0) >= MASTERY_STREAK:
+            mastered += 1
     return {
         "total": len(students),
         "withPhoto": sum(1 for s in students if s.get("photoPath")),
         "accuracy": (correct / seen) if seen else None,
         "weak": weak,
         "due": due,
+        "mastered": mastered,
         "attempts": seen,
     }

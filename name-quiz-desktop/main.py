@@ -1,4 +1,4 @@
-"""이름 외우기 — HTML UI를 WebView2 창에 띄웁니다."""
+"""네임브릿지 — 학생의 얼굴과 이름을 연결하는 교사용 학습 도구."""
 from __future__ import annotations
 
 import ctypes
@@ -68,7 +68,7 @@ def main() -> None:
 
     api = Api()
     window = webview.create_window(
-        "이름 외우기",
+        "네임브릿지",
         url=_serve_web(web_dir),
         js_api=api,
         width=1120,
@@ -77,7 +77,7 @@ def main() -> None:
         background_color="#F3FBF7",
         text_select=True,
     )
-    api.window = window
+    api._attach_window(window)
     try:
         webview.start(gui="edgechromium", debug=False)
     except Exception:
