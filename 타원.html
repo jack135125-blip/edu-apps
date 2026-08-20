@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>타원의 반사 성질</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #121a2b;
+      --line: #243049;
+      --text: #e8eefc;
+      --muted: #93a4c4;
+      --accent: #5b9cff;
+      --f1: #ff7a59;
+      --f2: #46d39a;
+      --ray: #ffd166;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Pretendard", "Noto Sans KR", sans-serif;
+      background: radial-gradient(1200px 600px at 20% -10%, #1a2744 0%, var(--bg) 55%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 20px 48px;
+    }
+    h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; }
+    .lead { color: var(--muted); margin-top: 8px; line-height: 1.7; }
+    .layout {
+      display: grid;
+      grid-template-columns: 1.4fr 0.9fr;
+      gap: 18px;
+      margin-top: 22px;
+    }
+    .card {
+      background: rgba(18, 26, 43, 0.92);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      cursor: grab;
+      background: #0d1526;
+    }
+    canvas:active { cursor: grabbing; }
+    .side { padding: 20px; }
+    .side h2 { font-size: 16px; margin-bottom: 10px; }
+    .side p, .side li { color: var(--muted); font-size: 14px; line-height: 1.75; }
+    .side ol { padding-left: 18px; }
+    .formula {
+      margin: 12px 0;
+      padding: 12px 14px;
+      background: #0b1324;
+      border: 1px solid #2a3b5c;
+      border-radius: 12px;
+      color: #cfe0ff;
+      font-weight: 700;
+      text-align: center;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    button, label.chk {
+      border: 1px solid #33507e;
+      background: #18263f;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:hover, label.chk:hover { border-color: var(--accent); }
+    button.active { background: #1d4ed8; border-color: #3b82f6; }
+    label.chk { display: inline-flex; align-items: center; gap: 6px; }
+    .hint { margin-top: 14px; font-size: 13px; color: #7f93b8; }
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>타원의 반사 성질</h1>
+    <p class="lead">
+      한 초점에서 나간 빛(또는 당구공)은 타원 둘레에서 반사되면 반드시 다른 초점을 향합니다.
+      아래 그림에서 노란 점을 끌며 입사각과 반사각이 같아지는 모습을 확인해 보세요.
+    </p>
+
+    <div class="layout">
+      <div class="card">
+        <canvas id="cv" width="760" height="520"></canvas>
+      </div>
+      <div class="card side">
+        <h2>한 줄로</h2>
+        <p>타원 위의 점 P에서 두 초점 F₁, F₂를 이으면, 접선에 대한 두 각이 같습니다. 그래서 F₁ → P 광선은 P에서 반사되어 F₂로 갑니다.</p>
+        <div class="formula">∠(F₁P, 접선) = ∠(F₂P, 접선)</div>
+
+        <h2>왜 그럴까?</h2>
+        <ol>
+          <li>타원의 정의: 모든 점 P에 대해 PF₁ + PF₂ = 상수(2a).</li>
+          <li>빛은 최단 경로를 택합니다(페르마의 원리).</li>
+          <li>한쪽 초점에서 나와 타원 벽에 닿고 다른 초점으로 가는 경로는, 그 상수 때문에 항상 같은 길이입니다.</li>
+          <li>그 경로가 최적이므로 입사각 = 반사각이 됩니다.</li>
+        </ol>
+
+        <div class="controls">
+          <button id="play" class="active">광선 보내기</button>
+          <label class="chk"><input type="checkbox" id="showAngles" checked/> 각 표시</label>
+          <label class="chk"><input type="checkbox" id="showTangent" checked/> 접선·법선</label>
+        </div>
+        <p class="hint">노란 점 P를 드래그하면 반사 지점이 바뀝니다. 타원은 “속삭이는 회랑”, 타원형 당구대에 쓰이는 바로 그 성질입니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("cv");
+    const ctx = canvas.getContext("2d");
+    const a = 250, b = 150;
+    const cx = 380, cy = 260;
+    const c = Math.sqrt(a * a - b * b);
+    const F1 = { x: cx - c, y: cy };
+    const F2 = { x: cx + c, y: cy };
+
+    let theta = 0.55;
+    let dragging = false;
+    let animT = 0;
+    let playing = true;
+
+    function pointOnEllipse(t) {
+      return { x: cx + a * Math.cos(t), y: cy + b * Math.sin(t) };
+    }
+    function tangentAt(t) {
+      return { x: -a * Math.sin(t), y: b * Math.cos(t) };
+    }
+    function normalize(v) {
+      const n = Math.hypot(v.x, v.y) || 1;
+      return { x: v.x / n, y: v.y / n };
+    }
+    function sub(p, q) { return { x: p.x - q.x, y: p.y - q.y }; }
+    function add(p, q) { return { x: p.x + q.x, y: p.y + q.y }; }
+    function mul(v, s) { return { x: v.x * s, y: v.y * s }; }
+    function dot(u, v) { return u.x * v.x + u.y * v.y; }
+    function lerp(p, q, t) { return { x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t }; }
+
+    function angleBetween(u, v) {
+      const nu = normalize(u), nv = normalize(v);
+      return Math.acos(Math.max(-1, Math.min(1, dot(nu, nv))));
+    }
+
+    function canvasPoint(e) {
+      const r = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - r.left) * (canvas.width / r.width),
+        y: (e.clientY - r.top) * (canvas.height / r.height)
+      };
+    }
+
+    canvas.addEventListener("pointerdown", (e) => {
+      dragging = true;
+      canvas.setPointerCapture(e.pointerId);
+      moveP(e);
+    });
+    canvas.addEventListener("pointermove", (e) => { if (dragging) moveP(e); });
+    canvas.addEventListener("pointerup", () => { dragging = false; });
+
+    function moveP(e) {
+      const p = canvasPoint(e);
+      theta = Math.atan2((p.y - cy) / b, (p.x - cx) / a);
+      animT = 0;
+    }
+
+    document.getElementById("play").addEventListener("click", () => {
+      playing = !playing;
+      document.getElementById("play").classList.toggle("active", playing);
+      document.getElementById("play").textContent = playing ? "광선 보내기" : "일시정지";
+      if (playing) animT = 0;
+    });
+    document.getElementById("showAngles").addEventListener("change", draw);
+    document.getElementById("showTangent").addEventListener("change", draw);
+
+    function drawArc(origin, from, to, color, label) {
+      const u = normalize(from), v = normalize(to);
+      let a1 = Math.atan2(u.y, u.x);
+      let a2 = Math.atan2(v.y, v.x);
+      let da = a2 - a1;
+      while (da <= -Math.PI) da += 2 * Math.PI;
+      while (da > Math.PI) da -= 2 * Math.PI;
+      ctx.beginPath();
+      ctx.arc(origin.x, origin.y, 28, a1, a1 + da, da < 0);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      const mid = a1 + da / 2;
+      ctx.fillStyle = color;
+      ctx.font = "12px Pretendard, sans-serif";
+      ctx.fillText(label, origin.x + Math.cos(mid) * 40 - 8, origin.y + Math.sin(mid) * 40);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "#2a3d63";
+      ctx.setLineDash([4, 6]);
+      ctx.beginPath();
+      ctx.moveTo(80, cy); ctx.lineTo(680, cy);
+      ctx.moveTo(cx, 70); ctx.lineTo(cx, 450);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, a, b, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = "#7eb6ff";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      const P = pointOnEllipse(theta);
+      const T = normalize(tangentAt(theta));
+      const N = { x: -T.y, y: T.x };
+      if (dot(N, sub(F1, P)) > 0) { N.x *= -1; N.y *= -1; }
+
+      if (document.getElementById("showTangent").checked) {
+        ctx.beginPath();
+        ctx.moveTo(P.x - T.x * 180, P.y - T.y * 180);
+        ctx.lineTo(P.x + T.x * 180, P.y + T.y * 180);
+        ctx.strokeStyle = "#8ea2c8";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(P.x, P.y);
+        ctx.lineTo(P.x + N.x * 70, P.y + N.y * 70);
+        ctx.strokeStyle = "#c4d4f5";
+        ctx.setLineDash([3, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(F1.x, F1.y); ctx.lineTo(P.x, P.y); ctx.lineTo(F2.x, F2.y);
+      ctx.strokeStyle = "rgba(255, 209, 102, 0.35)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      if (document.getElementById("showAngles").checked) {
+        const toF1 = sub(F1, P);
+        const toF2 = sub(F2, P);
+        const tPlus = T;
+        const tMinus = mul(T, -1);
+        const side1 = dot(toF1, tPlus) > 0 ? tPlus : tMinus;
+        const side2 = dot(toF2, tPlus) > 0 ? tPlus : tMinus;
+        drawArc(P, toF1, side1, "#ff7a59", "α");
+        drawArc(P, toF2, side2, "#46d39a", "α");
+      }
+
+      const d1 = Math.hypot(P.x - F1.x, P.y - F1.y);
+      const d2 = Math.hypot(P.x - F2.x, P.y - F2.y);
+      const total = d1 + d2;
+      const s = (animT % 1) * total;
+      const photon = s < d1 ? lerp(F1, P, s / d1) : lerp(P, F2, (s - d1) / d2);
+
+      ctx.beginPath();
+      ctx.arc(photon.x, photon.y, 6, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffe08a";
+      ctx.shadowColor = "#ffd166";
+      ctx.shadowBlur = 16;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      function focus(pt, color, name) {
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.fillStyle = color;
+        ctx.font = "700 14px Pretendard, sans-serif";
+        ctx.fillText(name, pt.x - 8, pt.y + 24);
+      }
+      focus(F1, "#ff7a59", "F₁");
+      focus(F2, "#46d39a", "F₂");
+
+      ctx.beginPath();
+      ctx.arc(P.x, P.y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffd166";
+      ctx.fill();
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = "#ffd166";
+      ctx.font = "700 14px Pretendard, sans-serif";
+      ctx.fillText("P", P.x + 12, P.y - 10);
+
+      ctx.fillStyle = "#93a4c4";
+      ctx.font = "13px Pretendard, sans-serif";
+      ctx.fillText(`PF₁ + PF₂ = ${(d1 + d2).toFixed(0)} (일정)`, 24, 32);
+    }
+
+    function loop() {
+      if (playing) animT += 0.0045;
+      draw();
+      requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
+</body>
+</html>
