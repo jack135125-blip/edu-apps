@@ -85,6 +85,20 @@
     button:hover, label.chk:hover { border-color: var(--accent); }
     button.active { background: #1d4ed8; border-color: #3b82f6; }
     label.chk { display: inline-flex; align-items: center; gap: 6px; }
+    .slider {
+      flex: 1 1 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border: 1px solid #33507e;
+      background: #18263f;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .slider input { flex: 1; accent-color: var(--ray); cursor: pointer; }
+    .slider span { min-width: 1.5em; text-align: right; color: var(--ray); }
     .hint { margin-top: 14px; font-size: 13px; color: #7f93b8; }
     @media (max-width: 860px) {
       .layout { grid-template-columns: 1fr; }
@@ -120,8 +134,12 @@
           <button id="play" class="active">광선 보내기</button>
           <label class="chk"><input type="checkbox" id="showAngles" checked/> 각 표시</label>
           <label class="chk"><input type="checkbox" id="showTangent" checked/> 접선·법선</label>
+          <label class="slider">광선 개수
+            <input type="range" id="rayCount" min="1" max="24" value="1"/>
+            <span id="rayCountVal">1</span>
+          </label>
         </div>
-        <p class="hint">노란 점 P를 드래그하면 반사 지점이 바뀝니다. 타원은 “속삭이는 회랑”, 타원형 당구대에 쓰이는 바로 그 성질입니다.</p>
+        <p class="hint">노란 점 P를 드래그하면 반사 지점이 바뀝니다. 광선 개수를 늘리면 F₁에서 여러 방향으로 나간 공이 모두 F₂로 모입니다.</p>
       </div>
     </div>
   </div>
@@ -191,6 +209,12 @@
     });
     document.getElementById("showAngles").addEventListener("change", draw);
     document.getElementById("showTangent").addEventListener("change", draw);
+    const rayCountEl = document.getElementById("rayCount");
+    const rayCountVal = document.getElementById("rayCountVal");
+    rayCountEl.addEventListener("input", () => {
+      rayCountVal.textContent = rayCountEl.value;
+      draw();
+    });
 
     function drawArc(origin, from, to, color, label) {
       const u = normalize(from), v = normalize(to);
@@ -249,11 +273,23 @@
         ctx.setLineDash([]);
       }
 
-      ctx.beginPath();
-      ctx.moveTo(F1.x, F1.y); ctx.lineTo(P.x, P.y); ctx.lineTo(F2.x, F2.y);
-      ctx.strokeStyle = "rgba(255, 209, 102, 0.35)";
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      const rayCount = Math.max(1, Number(rayCountEl.value) || 1);
+      const hits = [];
+      for (let i = 0; i < rayCount; i++) {
+        const t = theta + (2 * Math.PI * i) / rayCount;
+        const hit = i === 0 ? P : pointOnEllipse(t);
+        const d1i = Math.hypot(hit.x - F1.x, hit.y - F1.y);
+        const d2i = Math.hypot(hit.x - F2.x, hit.y - F2.y);
+        hits.push({ hit, d1: d1i, d2: d2i });
+      }
+
+      hits.forEach(({ hit }, i) => {
+        ctx.beginPath();
+        ctx.moveTo(F1.x, F1.y); ctx.lineTo(hit.x, hit.y); ctx.lineTo(F2.x, F2.y);
+        ctx.strokeStyle = i === 0 ? "rgba(255, 209, 102, 0.45)" : "rgba(255, 209, 102, 0.18)";
+        ctx.lineWidth = i === 0 ? 2 : 1.25;
+        ctx.stroke();
+      });
 
       if (document.getElementById("showAngles").checked) {
         const toF1 = sub(F1, P);
@@ -266,19 +302,22 @@
         drawArc(P, toF2, side2, "#46d39a", "α");
       }
 
-      const d1 = Math.hypot(P.x - F1.x, P.y - F1.y);
-      const d2 = Math.hypot(P.x - F2.x, P.y - F2.y);
-      const total = d1 + d2;
-      const s = (animT % 1) * total;
-      const photon = s < d1 ? lerp(F1, P, s / d1) : lerp(P, F2, (s - d1) / d2);
+      const d1 = hits[0].d1;
+      const d2 = hits[0].d2;
 
-      ctx.beginPath();
-      ctx.arc(photon.x, photon.y, 6, 0, Math.PI * 2);
-      ctx.fillStyle = "#ffe08a";
-      ctx.shadowColor = "#ffd166";
-      ctx.shadowBlur = 16;
-      ctx.fill();
-      ctx.shadowBlur = 0;
+      hits.forEach(({ hit, d1: d1i, d2: d2i }, i) => {
+        const total = d1i + d2i;
+        const phase = (animT + i / rayCount) % 1;
+        const s = phase * total;
+        const photon = s < d1i ? lerp(F1, hit, s / d1i) : lerp(hit, F2, (s - d1i) / d2i);
+        ctx.beginPath();
+        ctx.arc(photon.x, photon.y, i === 0 ? 6 : 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = i === 0 ? "#ffe08a" : "#ffd166";
+        ctx.shadowColor = "#ffd166";
+        ctx.shadowBlur = i === 0 ? 16 : 10;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      });
 
       function focus(pt, color, name) {
         ctx.beginPath();
