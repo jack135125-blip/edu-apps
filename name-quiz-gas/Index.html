@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <base target="_top" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>네임퀴즈</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <?!= include('Styles'); ?>
+  </head>
+  <body>
+    <div class="app">
+      <header class="top">
+        <div>
+          <p class="eyebrow">나만의 이름 암기장</p>
+          <h1 id="pageTitle">네임퀴즈</h1>
+          <p class="sub" id="pageSub">Google Drive에 사진을 두고, 시트에 기록을 남깁니다.</p>
+        </div>
+        <div class="top-actions" id="topActions"></div>
+      </header>
+
+      <main id="main"></main>
+    </div>
+
+    <div class="toast" id="toast" hidden></div>
+    <div class="busy" id="busy" hidden>
+      <div class="busy-card">불러오는 중…</div>
+    </div>
+
+    <div class="modal" id="modal" hidden>
+      <div class="modal-card" id="modalCard"></div>
+    </div>
+
+    <?!= include('Client'); ?>
+  </body>
+</html>

@@ -1,0 +1,892 @@
+<script>
+(function () {
+  const state = {
+    screen: 'home',
+    classes: [],
+    current: null,
+    tab: 'quiz',
+    quiz: null,
+    photoCache: {},
+    prefetch: {},
+    locked: false,
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const main = () => $('main');
+
+  function busy(on) {
+    $('busy').hidden = !on;
+  }
+
+  function toast(msg, err) {
+    const el = $('toast');
+    el.hidden = false;
+    el.textContent = msg;
+    el.classList.toggle('err', !!err);
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => {
+      el.hidden = true;
+    }, 2400);
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function run(name, ...args) {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((e) => reject(e))
+        [name](...args);
+    });
+  }
+
+  function pct(v) {
+    if (v == null) return '—';
+    return Math.round(v * 100) + '%';
+  }
+
+  function closeModal() {
+    $('modal').hidden = true;
+    $('modalCard').innerHTML = '';
+  }
+
+  function openModal(html) {
+    $('modalCard').innerHTML = html;
+    $('modal').hidden = false;
+  }
+
+  function setHeader(title, sub, actionsHtml) {
+    $('pageTitle').textContent = title;
+    $('pageSub').textContent = sub || '';
+    $('topActions').innerHTML = actionsHtml || '';
+  }
+
+  async function loadHome() {
+    busy(true);
+    try {
+      state.classes = await run('listClasses');
+      state.screen = 'home';
+      state.current = null;
+      state.quiz = null;
+      renderHome();
+    } catch (e) {
+      toast(String(e.message || e), true);
+      renderSetupHint(String(e.message || e));
+    } finally {
+      busy(false);
+    }
+  }
+
+  function renderSetupHint(msg) {
+    setHeader('네임퀴즈', '초기 설정이 필요합니다.');
+    main().innerHTML = `
+      <section class="panel empty">
+        <strong>설정이 필요해요</strong>
+        <p style="margin:8px 0 0">${escapeHtml(msg)}</p>
+        <p style="margin:12px 0 0;font-size:13px">
+          Apps Script 편집기에서 <code>setupNameQuiz</code>를 실행한 뒤,<br/>
+          배포 → 새 배포 → 웹앱으로 다시 열어 주세요.
+        </p>
+      </section>`;
+  }
+
+  function renderHome() {
+    setHeader(
+      '네임퀴즈',
+      '학급을 고르고 퀴즈로 이름을 익혀 보세요.',
+      `<button class="btn-primary" type="button" data-act="new-class">학급 만들기</button>
+       <button class="btn-secondary" type="button" data-act="import-backup">백업 가져오기</button>`
+    );
+
+    if (!state.classes.length) {
+      main().innerHTML = `
+        <section class="panel empty">
+          <strong>아직 학급이 없어요</strong>
+          ‘학급 만들기’ 또는 데스크톱 <strong>백업 가져오기</strong>로 시작하세요.
+        </section>`;
+      return;
+    }
+
+    main().innerHTML = `
+      <section class="grid">
+        ${state.classes
+          .map((c) => {
+            const s = c.summary || {};
+            return `
+            <button class="class-card" type="button" data-open="${escapeHtml(c.id)}">
+              <h3>${escapeHtml(c.name)}</h3>
+              <p class="meta">
+                ${escapeHtml(c.school || '학교 미입력')}
+                ${c.grade != null ? ` · ${c.grade}-${c.classNum ?? '?'}반` : ''}
+                ${c.teacher ? ` · ${escapeHtml(c.teacher)}` : ''}
+              </p>
+              <div class="chips">
+                <span class="chip">${s.withPhoto || 0}/${s.total || 0}명 사진</span>
+                <span class="chip muted">정확도 ${escapeHtml(s.accuracyLabel || '—')}</span>
+                ${s.weak ? `<span class="chip warn">약함 ${s.weak}</span>` : ''}
+                ${s.due ? `<span class="chip warn">복습 ${s.due}</span>` : ''}
+              </div>
+            </button>`;
+          })
+          .join('')}
+      </section>`;
+  }
+
+  async function openClass(id) {
+    busy(true);
+    try {
+      state.current = await run('getClassDetail', id);
+      state.screen = 'class';
+      state.tab = 'quiz';
+      renderClass();
+    } catch (e) {
+      toast(String(e.message || e), true);
+    } finally {
+      busy(false);
+    }
+  }
+
+  function renderClass() {
+    const c = state.current;
+    if (!c) return;
+    setHeader(
+      c.name,
+      [c.school, c.grade != null ? `${c.grade}-${c.classNum}반` : '', c.teacher ? `담당 ${c.teacher}` : '']
+        .filter(Boolean)
+        .join(' · ') || '학급 상세',
+      `<button class="btn-secondary btn-sm" type="button" data-act="back-home">목록</button>
+       <button class="btn-sky btn-sm" type="button" data-act="sync-photos">사진 동기화</button>
+       <button class="btn-mint btn-sm" type="button" data-act="optimize-photos">사진 빠르게</button>`
+    );
+
+    const s = c.summary || {};
+    let body = `
+      <div class="tabs">
+        <button class="tab ${state.tab === 'quiz' ? 'active' : ''}" type="button" data-tab="quiz">퀴즈</button>
+        <button class="tab ${state.tab === 'students' ? 'active' : ''}" type="button" data-tab="students">명단</button>
+        <button class="tab ${state.tab === 'stats' ? 'active' : ''}" type="button" data-tab="stats">현황</button>
+      </div>`;
+
+    if (state.tab === 'quiz') {
+      body += `
+        <section class="panel">
+          <div class="chips" style="margin-bottom:12px">
+            <span class="chip">${s.withPhoto || 0}/${s.total || 0}명 사진</span>
+            <span class="chip muted">누적 ${s.attempts || 0}문항</span>
+            <span class="chip muted">정확도 ${escapeHtml(s.accuracyLabel || '—')}</span>
+            <span class="chip warn">약함 ${s.weak || 0}</span>
+            <span class="chip warn">복습 ${s.due || 0}</span>
+          </div>
+          <div class="grid">
+            ${(c.modes || [])
+              .map(
+                (m) => `
+              <button class="mode-card" type="button" data-mode="${escapeHtml(m.id)}">
+                <h4>${escapeHtml(m.label)}</h4>
+                <p>${escapeHtml(m.desc)}</p>
+              </button>`
+              )
+              .join('')}
+          </div>
+        </section>`;
+    }
+
+    if (state.tab === 'students') {
+      body += `
+        <section class="panel">
+          <div class="actions" style="justify-content:flex-start;margin-bottom:12px">
+            <button class="btn-primary btn-sm" type="button" data-act="add-student">학생 추가</button>
+          </div>
+          <div class="student-list">
+            ${(c.students || [])
+              .map((st) => {
+                return `
+                <div class="student-row" data-student="${escapeHtml(st.id)}">
+                  <div class="ph" data-photo-slot="${escapeHtml(st.photoFileId || '')}">${
+                    st.hasPhoto ? '…' : '없음'
+                  }</div>
+                  <div>
+                    <strong>${st.number != null ? st.number + '. ' : ''}${escapeHtml(st.name)}</strong>
+                    <small>${st.stats.seen}회 · ${escapeHtml(st.accuracyLabel)}</small>
+                  </div>
+                  <div style="display:grid;gap:6px">
+                    <label class="btn-secondary btn-sm" style="text-align:center">
+                      사진
+                      <input type="file" accept="image/*" hidden data-upload="${escapeHtml(st.id)}" />
+                    </label>
+                    <button class="btn-ghost btn-sm" type="button" data-del-student="${escapeHtml(st.id)}">삭제</button>
+                  </div>
+                </div>`;
+              })
+              .join('') || '<div class="empty">학생이 없습니다.</div>'}
+          </div>
+        </section>`;
+    }
+
+    if (state.tab === 'stats') {
+      const weak = (c.students || []).filter((st) => {
+        const seen = st.stats.seen;
+        if (!seen) return false;
+        return st.stats.correct / seen < 0.7 || st.stats.wrong >= 2;
+      });
+      body += `
+        <section class="panel">
+          <div class="chips">
+            <span class="chip">학생 ${s.total || 0}</span>
+            <span class="chip muted">정확도 ${escapeHtml(s.accuracyLabel || '—')}</span>
+            <span class="chip warn">약함 ${weak.length}</span>
+          </div>
+          <div class="student-list" style="margin-top:12px">
+            ${weak
+              .map(
+                (st) => `
+              <div class="student-row">
+                <div class="ph">약함</div>
+                <div>
+                  <strong>${escapeHtml(st.name)}</strong>
+                  <small>${st.stats.correct}/${st.stats.seen} · 오답 ${st.stats.wrong}</small>
+                </div>
+              </div>`
+              )
+              .join('') || '<div class="empty">아직 약한 학생이 없어요.</div>'}
+          </div>
+          <button class="btn-primary btn-block" style="margin-top:14px" type="button" data-mode="weakOnly">
+            약한 학생만 퀴즈
+          </button>
+        </section>`;
+    }
+
+    main().innerHTML = body;
+    hydrateListPhotos();
+  }
+
+  async function hydrateListPhotos() {
+    const slots = Array.from(document.querySelectorAll('[data-photo-slot]'));
+    slots.forEach((el) => {
+      const fileId = el.getAttribute('data-photo-slot');
+      if (!fileId) return;
+      const url = photoUrl(fileId, 200);
+      el.outerHTML = `<img class="avatar" src="${url}" alt="" loading="lazy" onerror="window.__nqPhotoErr && window.__nqPhotoErr(this,'${escapeHtml(
+        fileId
+      )}')" />`;
+    });
+  }
+
+  function photoUrl(fileId, size) {
+    return (
+      'https://drive.google.com/thumbnail?id=' +
+      encodeURIComponent(fileId) +
+      '&sz=w' +
+      (size || 600)
+    );
+  }
+
+  function photoFallbackUrl(fileId) {
+    return 'https://lh3.googleusercontent.com/d/' + encodeURIComponent(fileId) + '=w600';
+  }
+
+  window.__nqPhotoErr = function (img, fileId) {
+    if (!img || img.dataset.fallback === '1') return;
+    img.dataset.fallback = '1';
+    img.src = photoFallbackUrl(fileId);
+  };
+
+  function loadPhoto(fileId) {
+    if (!fileId) return Promise.resolve(null);
+    if (state.photoCache[fileId]) return Promise.resolve(state.photoCache[fileId]);
+    const url = photoUrl(fileId, 600);
+    state.photoCache[fileId] = url;
+    return Promise.resolve(url);
+  }
+
+  function prefetchPhoto(fileId) {
+    if (!fileId || state.prefetch[fileId]) return;
+    state.prefetch[fileId] = true;
+    const img = new Image();
+    img.referrerPolicy = 'no-referrer';
+    img.src = photoUrl(fileId, 600);
+  }
+
+  function prefetchQuizPhotos(q) {
+    if (!q) return;
+    (q.items || []).forEach((it) => prefetchPhoto(it.photoFileId));
+    (q.pool || []).forEach((it) => prefetchPhoto(it.photoFileId));
+  }
+
+  function showNewClassModal() {
+    openModal(`
+      <h3>학급 만들기</h3>
+      <p class="hint">Drive에 학급 사진 폴더가 함께 만들어집니다.</p>
+      <div class="form-grid">
+        <div class="field"><label>학급 이름</label><input id="f-name" placeholder="예: 3-2반" /></div>
+        <div class="field"><label>학교</label><input id="f-school" /></div>
+        <div class="row-2">
+          <div class="field"><label>학년</label><input id="f-grade" type="number" /></div>
+          <div class="field"><label>반</label><input id="f-classnum" type="number" /></div>
+        </div>
+        <div class="field"><label>담당</label><input id="f-teacher" /></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-ghost" type="button" data-modal="cancel">취소</button>
+        <button class="btn-primary" type="button" data-modal="create-class">만들기</button>
+      </div>`);
+  }
+
+  async function showImportBackupModal() {
+    openModal(`
+      <h3>데스크톱 백업 가져오기</h3>
+      <p class="hint">
+        1) PC에서 zip을 Google Drive에 업로드<br/>
+        2) 파일 링크의 ID를 넣거나, 아래 목록에서 선택<br/>
+        (예: drive.google.com/file/d/<b>여기가ID</b>/view)
+      </p>
+      <div class="form-grid">
+        <div class="field">
+          <label>Drive 파일 ID 또는 링크</label>
+          <input id="backup-file-id" placeholder="파일 ID 또는 URL" />
+        </div>
+        <div class="field">
+          <label>방식</label>
+          <select id="backup-mode" style="width:100%;padding:10px 12px;border:2px solid var(--line);border-radius:12px">
+            <option value="replace">덮어쓰기 (웹앱 데이터 삭제 후 백업으로 교체)</option>
+            <option value="merge">합치기 (기존 유지, 같은 학급은 갱신)</option>
+          </select>
+        </div>
+        <div id="backup-list" class="hint">백업 파일 검색 중…</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-ghost" type="button" data-modal="cancel">취소</button>
+        <button class="btn-primary" type="button" data-act="start-import" data-modal="start-import">가져오기</button>
+      </div>`);
+
+    try {
+      const zips = await run('findBackupZips');
+      const box = document.getElementById('backup-list');
+      if (!box) return;
+      if (!zips.length) {
+        box.textContent = 'Drive에서 백업 zip을 찾지 못했습니다. 위칸에 파일 ID를 직접 넣어 주세요.';
+        return;
+      }
+      box.innerHTML =
+        '<div style="display:grid;gap:6px">' +
+        zips
+          .map(
+            (z) =>
+              `<button type="button" class="btn-secondary btn-sm" style="text-align:left" data-pick-zip="${escapeHtml(
+                z.id
+              )}">${escapeHtml(z.name)}</button>`
+          )
+          .join('') +
+        '</div>';
+    } catch (e) {
+      const box = document.getElementById('backup-list');
+      if (box) box.textContent = String(e.message || e);
+    }
+  }
+
+  function extractDriveFileId(raw) {
+    const s = String(raw || '').trim();
+    if (!s) return '';
+    const m = s.match(/\/d\/([a-zA-Z0-9_-]+)/) || s.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (m) return m[1];
+    if (/^[a-zA-Z0-9_-]{20,}$/.test(s)) return s;
+    return s;
+  }
+
+  async function runBackupImport(fileId, mode) {
+    busy(true);
+    const busyCard = document.querySelector('#busy .busy-card');
+    if (busyCard) busyCard.textContent = '백업 가져오는 중… (수 분 걸릴 수 있어요)';
+    try {
+      toast('가져오기를 시작합니다…');
+      let res = await run('importDesktopBackup', fileId, mode);
+      while (res && res.done === false) {
+        if (busyCard) busyCard.textContent = res.message || '이어서 가져오는 중…';
+        toast(res.message || '이어서 가져오는 중…');
+        res = await run('continueDesktopBackupImport');
+      }
+      closeModal();
+      toast((res && res.message) || '가져오기 완료');
+      await loadHome();
+    } catch (e) {
+      const msg = e && (e.message || e.details || e) ? String(e.message || e.details || e) : '가져오기 실패';
+      toast(msg, true);
+    } finally {
+      if (busyCard) busyCard.textContent = '불러오는 중…';
+      busy(false);
+    }
+  }
+
+  function showAddStudentModal() {
+    openModal(`
+      <h3>학생 추가</h3>
+      <div class="form-grid">
+        <div class="field"><label>번호</label><input id="s-number" type="number" /></div>
+        <div class="field"><label>이름</label><input id="s-name" /></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-ghost" type="button" data-modal="cancel">취소</button>
+        <button class="btn-primary" type="button" data-modal="create-student">추가</button>
+      </div>`);
+  }
+
+  async function startQuiz(modeId) {
+    if (!state.current) return;
+    busy(true);
+    const busyCard = document.querySelector('#busy .busy-card');
+    if (busyCard) busyCard.textContent = '퀴즈 준비 중… (사진 빠른 로딩 설정)';
+    try {
+      const pack = await run('buildQuiz', state.current.id, modeId, { count: 12 });
+      state.quiz = {
+        mode: pack.mode,
+        classId: pack.classId,
+        items: pack.items,
+        pool: pack.pool,
+        index: 0,
+        correct: 0,
+        answered: 0,
+        locked: false,
+        flipped: false,
+      };
+      state.screen = 'quiz';
+      prefetchQuizPhotos(state.quiz);
+      await renderQuiz();
+    } catch (e) {
+      toast(String(e.message || e), true);
+    } finally {
+      if (busyCard) busyCard.textContent = '불러오는 중…';
+      busy(false);
+    }
+  }
+
+  async function renderQuiz() {
+    const q = state.quiz;
+    if (!q) return;
+    if (q.index >= q.items.length) {
+      renderQuizDone();
+      return;
+    }
+
+    const item = q.items[q.index];
+    setHeader(
+      q.mode.label,
+      '틀릴수록 나중에 더 자주 나와요.',
+      `<button class="btn-secondary btn-sm" type="button" data-act="quit-quiz">종료</button>`
+    );
+
+    const progress = Math.round((q.index / q.items.length) * 100);
+    main().innerHTML = `
+      <section class="panel">
+        <div class="quiz-progress">
+          <span>${q.index + 1} / ${q.items.length}</span>
+          <span>정답 ${q.correct} / ${q.answered}</span>
+        </div>
+        <div class="bar"><span style="width:${progress}%"></span></div>
+        <div class="quiz-stage" id="quizStage"><div class="empty">사진 불러오는 중…</div></div>
+      </section>`;
+
+    const stage = $('quizStage') || document.getElementById('quizStage');
+    try {
+      if (q.mode.id === 'photoToName' || q.mode.id === 'typeName' || q.mode.id === 'practice' || q.mode.id === 'weakOnly' || q.mode.id === 'dueReview') {
+        // weak/due use photoToName style unless practice/type
+      }
+      await paintQuestion(stage, q, item);
+    } catch (e) {
+      stage.innerHTML = `<div class="empty">${escapeHtml(e.message || e)}</div>`;
+    }
+  }
+
+  function pickChoices(correct, pool, count) {
+    const others = pool
+      .filter((s) => s.id !== correct.id)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, Math.max(0, count - 1));
+    return [...others, correct].sort(() => Math.random() - 0.5);
+  }
+
+  async function paintQuestion(stage, q, item) {
+    const mode = q.mode.id === 'weakOnly' || q.mode.id === 'dueReview' ? 'photoToName' : q.mode.id;
+    const imgTag = (fileId, cls) => {
+      const url = item.photoUrl && fileId === item.photoFileId ? item.photoUrl : photoUrl(fileId, 600);
+      return `<img class="${cls || ''}" src="${url}" alt="" referrerpolicy="no-referrer" onerror="window.__nqPhotoErr && window.__nqPhotoErr(this,'${escapeHtml(
+        fileId
+      )}')" />`;
+    };
+
+    if (mode === 'nameToPhoto') {
+      const choices = pickChoices(item, q.pool, 4);
+      stage.innerHTML = `
+        <p class="quiz-prompt">${escapeHtml(item.name)}</p>
+        <div class="choices">
+          ${choices
+            .map(
+              (c) => `
+            <button class="choice choice-photo" type="button" data-choice="${escapeHtml(c.id)}">
+              ${imgTag(c.photoFileId, '')}
+            </button>`
+            )
+            .join('')}
+        </div>`;
+      return;
+    }
+
+    if (mode === 'practice') {
+      stage.innerHTML = `
+        <div class="flip-card" id="flipCard" data-flipped="0">
+          ${imgTag(item.photoFileId, '')}
+          <p style="margin:10px 0 0;color:var(--muted);font-size:13px">탭하면 이름이 보여요</p>
+        </div>
+        <div class="actions">
+          <button class="btn-danger" type="button" data-review="0">헷갈려요</button>
+          <button class="btn-mint" type="button" data-review="1">알았어요</button>
+        </div>`;
+      return;
+    }
+
+    if (mode === 'typeName') {
+      stage.innerHTML = `
+        ${imgTag(item.photoFileId, 'quiz-photo')}
+        <div class="field">
+          <label>이름 입력</label>
+          <input id="typeInput" autocomplete="off" placeholder="이름을 입력하세요" />
+        </div>
+        <button class="btn-primary btn-block" type="button" data-act="submit-type">확인</button>`;
+      const input = document.getElementById('typeInput');
+      if (input) input.focus();
+      return;
+    }
+
+    // photoToName default
+    const choices = pickChoices(item, q.pool, 4);
+    stage.innerHTML = `
+      ${imgTag(item.photoFileId, 'quiz-photo')}
+      <div class="choices">
+        ${choices
+          .map(
+            (c) =>
+              `<button class="choice" type="button" data-choice="${escapeHtml(c.id)}">${escapeHtml(c.name)}</button>`
+          )
+          .join('')}
+      </div>`;
+  }
+
+  function renderQuizDone() {
+    const q = state.quiz;
+    setHeader('퀴즈 완료', '오늘도 한 걸음 외웠어요.', '');
+    main().innerHTML = `
+      <section class="panel empty">
+        <strong>${q.correct} / ${q.answered} 정답</strong>
+        <p style="margin-top:8px">정확도 ${q.answered ? Math.round((q.correct / q.answered) * 100) : 0}%</p>
+        <div class="actions" style="margin-top:16px">
+          <button class="btn-secondary" type="button" data-act="back-class">학급으로</button>
+          <button class="btn-primary" type="button" data-mode="${escapeHtml(q.mode.id)}">한 번 더</button>
+        </div>
+      </section>`;
+  }
+
+  async function answerChoice(choiceId) {
+    const q = state.quiz;
+    if (!q || q.locked) return;
+    q.locked = true;
+    const item = q.items[q.index];
+    const ok = choiceId === item.id;
+    Array.from(document.querySelectorAll('[data-choice]')).forEach((btn) => {
+      const id = btn.getAttribute('data-choice');
+      if (id === item.id) btn.classList.add('ok');
+      else if (id === choiceId && !ok) btn.classList.add('bad');
+      btn.disabled = true;
+    });
+    await finishAnswer(ok);
+  }
+
+  async function finishAnswer(ok) {
+    const q = state.quiz;
+    const item = q.items[q.index];
+    q.answered += 1;
+    if (ok) q.correct += 1;
+    try {
+      await run('recordAnswer', item.id, ok);
+    } catch (e) {
+      toast(String(e.message || e), true);
+    }
+    setTimeout(async () => {
+      q.index += 1;
+      q.locked = false;
+      q.flipped = false;
+      await renderQuiz();
+    }, 650);
+  }
+
+  function resizeImageToDataUrl(file, maxSide) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('파일을 읽지 못했습니다.'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.onerror = () => reject(new Error('이미지를 열지 못했습니다.'));
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadPhoto(studentId, file) {
+    busy(true);
+    try {
+      const dataUrl = await resizeImageToDataUrl(file, 900);
+      const st = await run('uploadStudentPhoto', {
+        studentId,
+        dataUrl,
+        fileName: file.name,
+      });
+      if (st.photoFileId && st.photoUrl) state.photoCache[st.photoFileId] = st.photoUrl;
+      state.current = await run('getClassDetail', state.current.id);
+      renderClass();
+      toast('사진을 저장했습니다.');
+    } catch (e) {
+      toast(String(e.message || e), true);
+    } finally {
+      busy(false);
+    }
+  }
+
+  document.addEventListener('click', async (e) => {
+    const pick = e.target.closest('[data-pick-zip]');
+    if (pick) {
+      const input = document.getElementById('backup-file-id');
+      if (input) input.value = pick.getAttribute('data-pick-zip');
+      return;
+    }
+
+    const t = e.target.closest('[data-act],[data-open],[data-tab],[data-mode],[data-choice],[data-modal],[data-review],[data-del-student],#flipCard');
+    if (!t) return;
+
+    if (t.id === 'flipCard') {
+      if (t.getAttribute('data-flipped') === '1') return;
+      const item = state.quiz.items[state.quiz.index];
+      t.setAttribute('data-flipped', '1');
+      t.innerHTML = `<p class="quiz-prompt">${escapeHtml(item.name)}</p>`;
+      return;
+    }
+
+    if (t.dataset.open) {
+      openClass(t.dataset.open);
+      return;
+    }
+    if (t.dataset.tab) {
+      state.tab = t.dataset.tab;
+      renderClass();
+      return;
+    }
+    if (t.dataset.mode && !t.dataset.act) {
+      startQuiz(t.dataset.mode);
+      return;
+    }
+    if (t.dataset.choice) {
+      answerChoice(t.dataset.choice);
+      return;
+    }
+    if (t.dataset.review != null) {
+      if (state.quiz && !state.quiz.locked) {
+        state.quiz.locked = true;
+        await finishAnswer(t.dataset.review === '1');
+      }
+      return;
+    }
+    if (t.dataset.delStudent) {
+      if (!confirm('이 학생을 삭제할까요?')) return;
+      busy(true);
+      try {
+        await run('deleteStudent', t.dataset.delStudent);
+        state.current = await run('getClassDetail', state.current.id);
+        renderClass();
+        toast('삭제했습니다.');
+      } catch (err) {
+        toast(String(err.message || err), true);
+      } finally {
+        busy(false);
+      }
+      return;
+    }
+
+    const act = t.dataset.act || t.dataset.modal;
+    if (!act) return;
+
+    if (act === 'cancel') {
+      closeModal();
+      return;
+    }
+    if (act === 'new-class') {
+      showNewClassModal();
+      return;
+    }
+    if (act === 'import-backup') {
+      showImportBackupModal();
+      return;
+    }
+    if (act === 'start-import') {
+      const idEl = document.getElementById('backup-file-id');
+      const modeEl = document.getElementById('backup-mode');
+      if (!idEl || !modeEl) {
+        toast('가져오기 창을 다시 열어 주세요.', true);
+        return;
+      }
+      const fileId = extractDriveFileId(idEl.value);
+      const mode = modeEl.value || 'replace';
+      if (!fileId) {
+        toast('Drive 파일 ID를 입력해 주세요.', true);
+        return;
+      }
+      // Apps Script iframe에서는 window.confirm 이 무시되는 경우가 많아 인앱 확인 사용
+      openModal(`
+        <h3>정말 가져올까요?</h3>
+        <p class="hint">${
+          mode === 'replace'
+            ? '웹앱의 기존 학급 데이터를 지우고 백업으로 바꿉니다.'
+            : '기존 데이터는 유지하고 백업 학급을 합칩니다.'
+        }</p>
+        <p class="hint">파일 ID: ${escapeHtml(fileId)}</p>
+        <div class="modal-actions">
+          <button class="btn-ghost" type="button" data-modal="cancel">취소</button>
+          <button class="btn-primary" type="button" data-act="confirm-import" data-file-id="${escapeHtml(
+            fileId
+          )}" data-import-mode="${escapeHtml(mode)}">확인 후 가져오기</button>
+        </div>`);
+      return;
+    }
+    if (act === 'confirm-import') {
+      const fileId = t.getAttribute('data-file-id');
+      const mode = t.getAttribute('data-import-mode') || 'replace';
+      await runBackupImport(fileId, mode);
+      return;
+    }
+    if (act === 'add-student') {
+      showAddStudentModal();
+      return;
+    }
+    if (act === 'back-home') {
+      loadHome();
+      return;
+    }
+    if (act === 'back-class') {
+      openClass(state.current.id);
+      return;
+    }
+    if (act === 'quit-quiz') {
+      openClass(state.quiz.classId);
+      return;
+    }
+    if (act === 'sync-photos') {
+      busy(true);
+      try {
+        const res = await run('syncPhotosFromFolder', state.current.id);
+        state.current = await run('getClassDetail', state.current.id);
+        renderClass();
+        toast(res.message || '동기화 완료');
+      } catch (err) {
+        toast(String(err.message || err), true);
+      } finally {
+        busy(false);
+      }
+      return;
+    }
+    if (act === 'optimize-photos') {
+      busy(true);
+      try {
+        const res = await run('optimizeClassPhotos', state.current.id);
+        toast(res.message || '설정 완료');
+      } catch (err) {
+        toast(String(err.message || err), true);
+      } finally {
+        busy(false);
+      }
+      return;
+    }
+    if (act === 'submit-type') {
+      if (!state.quiz || state.quiz.locked) return;
+      const input = document.getElementById('typeInput');
+      const item = state.quiz.items[state.quiz.index];
+      const ok = await run('namesMatch', input ? input.value : '', item.name);
+      state.quiz.locked = true;
+      toast(ok ? '정답!' : `정답은 ${item.name}`, !ok);
+      await finishAnswer(ok);
+      return;
+    }
+    if (act === 'create-class') {
+      const payload = {
+        name: document.getElementById('f-name').value,
+        school: document.getElementById('f-school').value,
+        grade: document.getElementById('f-grade').value,
+        classNum: document.getElementById('f-classnum').value,
+        teacher: document.getElementById('f-teacher').value,
+      };
+      busy(true);
+      try {
+        const detail = await run('createClass', payload);
+        closeModal();
+        state.current = detail;
+        state.screen = 'class';
+        state.tab = 'students';
+        renderClass();
+        toast('학급을 만들었습니다. 사진을 Drive 폴더에 넣고 동기화하세요.');
+      } catch (err) {
+        toast(String(err.message || err), true);
+      } finally {
+        busy(false);
+      }
+      return;
+    }
+    if (act === 'create-student') {
+      const payload = {
+        number: document.getElementById('s-number').value,
+        name: document.getElementById('s-name').value,
+      };
+      busy(true);
+      try {
+        await run('addStudent', state.current.id, payload);
+        closeModal();
+        state.current = await run('getClassDetail', state.current.id);
+        renderClass();
+        toast('학생을 추가했습니다.');
+      } catch (err) {
+        toast(String(err.message || err), true);
+      } finally {
+        busy(false);
+      }
+    }
+  });
+
+  document.addEventListener('change', (e) => {
+    const input = e.target.closest('input[data-upload]');
+    if (!input || !input.files || !input.files[0]) return;
+    uploadPhoto(input.getAttribute('data-upload'), input.files[0]);
+    input.value = '';
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && document.getElementById('typeInput')) {
+      const btn = document.querySelector('[data-act="submit-type"]');
+      if (btn) btn.click();
+    }
+  });
+
+  loadHome();
+})();
+</script>
