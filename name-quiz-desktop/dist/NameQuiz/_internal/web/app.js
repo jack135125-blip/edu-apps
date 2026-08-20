@@ -1,7 +1,7 @@
 let booted = false;
 
 const SUB = {
-  home: "사진 명렬표를 불러오고, 퀴즈로 학생 이름을 익혀 보세요.",
+  home: "학생의 얼굴과 이름을 연결하고, 자연스럽게 기억하세요.",
   class: "퀴즈 · 명단 · 학습 현황을 탭에서 골라 주세요.",
   quiz: "천천히 익혀 봐요. 틀릴수록 복습에 더 자주 나와요.",
 };
@@ -13,6 +13,12 @@ const state = {
   quiz: null,
   flipped: false,
   locked: false,
+  homeClasses: [],
+  homeOverview: null,
+  homeModes: [],
+  classOrderEditing: false,
+  classQuizSelecting: false,
+  selectedClassIds: new Set(),
 };
 
 const $ = (id) => document.getElementById(id);
@@ -58,6 +64,74 @@ function avatar(url) {
   return `<div class="ph">없음</div>`;
 }
 
+function emptyClassArt() {
+  return `
+    <svg class="empty-art" viewBox="0 0 260 150" aria-hidden="true">
+      <ellipse cx="130" cy="135" rx="92" ry="10" fill="#d8f5e7"/>
+      <rect x="72" y="36" width="116" height="91" rx="18" fill="#fff" stroke="#b8dfcc" stroke-width="3"/>
+      <circle cx="108" cy="73" r="18" fill="#ffd5c8"/>
+      <path d="M84 116c3-24 12-35 24-35s22 11 25 35H84Z" fill="#ff8f6b"/>
+      <circle cx="157" cy="67" r="14" fill="#ccecf8"/>
+      <path d="M139 111c2-21 9-31 18-31 10 0 18 10 20 31h-38Z" fill="#4ba3c7"/>
+      <path d="m50 42 4 9 9 4-9 4-4 9-4-9-9-4 9-4 4-9Z" fill="#f7c94a"/>
+      <path d="M194 24c16-6 25 2 20 15-4 10-14 14-24 9 0-10 1-18 4-24Z" fill="#79d6a8"/>
+    </svg>`;
+}
+
+function modeIcon(mode) {
+  return {
+    photoToName: "🖼️",
+    nameToPhoto: "🔎",
+    practice: "🃏",
+    typeName: "✍️",
+    weakOnly: "🎯",
+    dueReview: "🔔",
+  }[mode] || "✨";
+}
+
+function summaryInfographic(summary) {
+  const pct = summary.accuracy == null ? 0 : Math.round(summary.accuracy * 100);
+  const label = summary.accuracy == null ? "시작 전" : `${pct}%`;
+  return `
+    <div class="summary-board">
+      <div class="accuracy-ring" style="--value:${pct}">
+        <div><strong>${escapeHtml(label)}</strong><span>정확도</span></div>
+      </div>
+      <div class="summary-stat mint">
+        <span class="summary-icon">👥</span>
+        <div><strong>${summary.total}</strong><span>학생</span></div>
+      </div>
+      <div class="summary-stat coral">
+        <span class="summary-icon">🎯</span>
+        <div><strong>${summary.weak}</strong><span>약함</span></div>
+      </div>
+      <div class="summary-stat sky">
+        <span class="summary-icon">🔔</span>
+        <div><strong>${summary.due}</strong><span>복습</span></div>
+      </div>
+    </div>`;
+}
+
+function homeOverviewInfographic(overview) {
+  if (!overview) return "";
+  const label = overview.attempts ? overview.accuracyLabel : "시작 전";
+  return `
+    <section class="home-overview" aria-label="전체 학급 종합 분석">
+      <div class="overview-copy">
+        <span class="overview-kicker">TOTAL INSIGHT</span>
+        <h3>종합 분석</h3>
+        <p>${overview.classCount}개 학급의 학습 흐름을 한눈에 확인하세요.</p>
+      </div>
+      <div class="overview-ring" style="--value:${overview.accuracyPercent || 0}">
+        <div><strong>${escapeHtml(label)}</strong><span>전체 정확도</span></div>
+      </div>
+      <div class="overview-metric"><span>🏫</span><strong>${overview.classCount}</strong><small>학급</small></div>
+      <div class="overview-metric"><span>👥</span><strong>${overview.studentCount}</strong><small>학생</small></div>
+      <div class="overview-metric coral"><span>🎯</span><strong>${overview.weak}</strong><small>약함</small></div>
+      <div class="overview-metric sky"><span>🔔</span><strong>${overview.due}</strong><small>복습</small></div>
+    </section>`;
+}
+
 async function call(name, ...args) {
   const fn = api()[name];
   return await fn.apply(api(), args);
@@ -98,7 +172,10 @@ async function loadHome() {
   busy(true);
   try {
     const res = await call("home");
-    renderHome(res.classes || []);
+    state.classOrderEditing = false;
+    state.classQuizSelecting = false;
+    state.selectedClassIds.clear();
+    applyHomeData(res);
     showScreen("home");
   } catch (e) {
     toast(String(e.message || e), true);
@@ -107,7 +184,54 @@ async function loadHome() {
   }
 }
 
+function applyHomeData(res) {
+  state.homeOverview = res.overview || null;
+  state.homeModes = res.modes || state.homeModes;
+  renderHome(res.classes || []);
+}
+
+function classCard(c, index, editing, selecting) {
+  const selected = state.selectedClassIds.has(c.id);
+  const tag = editing ? "div" : "button";
+  const actionAttrs = editing
+    ? `data-class-id="${escapeHtml(c.id)}" draggable="true"`
+    : selecting
+      ? `type="button" data-select-class="${escapeHtml(c.id)}"`
+      : `type="button" data-open="${escapeHtml(c.id)}"`;
+  return `
+    <${tag} class="card class-card tone-${index % 3}${selected ? " selected" : ""}" ${actionAttrs}>
+      ${editing ? `<button class="class-drag-handle" type="button" tabindex="-1" aria-label="${escapeHtml(c.name)} 순서 이동">⠿</button>` : ""}
+      ${selecting ? `<span class="class-select-check" aria-hidden="true">${selected ? "✓" : ""}</span>` : ""}
+      <div class="class-card-head">
+        <div>
+          <span class="class-label">CLASS</span>
+          <h3>${escapeHtml(c.name || "학급")}</h3>
+          <p>${escapeHtml(c.school || "학교 미입력")} · ${c.studentCount || 0}명${c.teacher ? " · " + escapeHtml(c.teacher) : ""}</p>
+        </div>
+        <div class="class-clip" aria-hidden="true"><span>👩‍🏫</span><i>✦</i></div>
+      </div>
+      <div class="class-insights">
+        <div class="mini-ring" style="--value:${c.accuracyPercent || 0}">
+          <span>${c.attempts ? escapeHtml(c.accuracyLabel) : "시작 전"}</span>
+        </div>
+        <div class="mini-stat"><span>🎯</span><strong>${c.weak || 0}</strong><small>약함</small></div>
+        <div class="mini-stat"><span>🔔</span><strong>${c.due || 0}</strong><small>복습</small></div>
+      </div>
+      ${
+        editing
+          ? `<div class="go class-edit-footer">
+               <span>끌어서 순서 변경 ↕</span>
+               <button class="class-delete-btn" type="button" data-delete-class="${escapeHtml(c.id)}" data-class-name="${escapeHtml(c.name || "학급")}">삭제</button>
+             </div>`
+          : selecting
+            ? `<div class="go">${selected ? "퀴즈에 포함됨" : "눌러서 선택"} <span>${selected ? "✓" : "+"}</span></div>`
+            : `<div class="go">학급 열기 <span>→</span></div>`
+      }
+    </${tag}>`;
+}
+
 function renderHome(classes) {
+  state.homeClasses = classes;
   const root = $("screenHome");
   if (!classes.length) {
     root.innerHTML = `
@@ -116,33 +240,216 @@ function renderHome(classes) {
         <span class="muted">이 컴퓨터에 자동 저장됩니다</span>
       </div>
       <div class="empty">
+        ${emptyClassArt()}
         <h3>아직 학급이 없어요</h3>
-        <p>오른쪽 위 ‘엑셀 불러오기’로 가져오거나,<br/>엑셀 파일을 창에 끌어다 놓아도 됩니다</p>
+        <p>오른쪽 위 ‘엑셀 파일 불러오기’로 가져오거나,<br/>엑셀 파일을 창에 끌어다 놓아도 됩니다</p>
       </div>
     `;
     return;
   }
+  const editing = state.classOrderEditing;
+  const selecting = state.classQuizSelecting;
+  const selectedCount = state.selectedClassIds.size;
   root.innerHTML = `
+    ${homeOverviewInfographic(state.homeOverview)}
     <div class="row-between">
-      <h2 class="h2">내 학급</h2>
-      <span class="muted">이 컴퓨터에 자동 저장됩니다</span>
+      <div>
+        <h2 class="h2">내 학급</h2>
+        <span class="muted">${
+          editing
+            ? "카드를 끌어 순서를 바꾸거나 필요 없는 학급을 삭제하세요."
+            : selecting
+              ? "함께 퀴즈를 풀 학급을 선택하세요."
+              : "학년·반 오름차순으로 정렬됩니다."
+        }</span>
+      </div>
+      <div class="class-order-actions">
+        ${
+          editing
+            ? `<button class="btn btn-sky btn-sm" type="button" id="btnAscending">오름차순</button>
+               <button class="btn btn-sky btn-sm" type="button" id="btnCancelClassOrder">취소</button>
+               <button class="btn btn-accent btn-sm" type="button" id="btnSaveClassOrder">순서 저장</button>`
+            : selecting
+              ? `<button class="btn btn-sky btn-sm" type="button" id="btnCancelClassQuiz">취소</button>
+                 <button class="btn btn-accent btn-sm" type="button" id="btnChooseQuizMode" ${selectedCount ? "" : "disabled"}>선택 완료 (${selectedCount})</button>`
+              : `<button class="btn btn-accent btn-sm" type="button" id="btnSelectClassQuiz">✨ 학급 선택 퀴즈</button>
+                 <button class="btn btn-sky btn-sm" type="button" id="btnEditClassOrder">학급 편집</button>`
+        }
+      </div>
     </div>
-    <div class="grid-2">
-      ${classes
+    <div class="grid-2 class-grid${editing ? " ordering" : ""}${selecting ? " selecting" : ""}" id="classGrid">
+      ${classes.map((c, index) => classCard(c, index, editing, selecting)).join("")}
+    </div>
+  `;
+  if (editing) {
+    $("btnAscending").onclick = resetClassOrder;
+    $("btnCancelClassOrder").onclick = () => {
+      state.classOrderEditing = false;
+      renderHome(state.homeClasses);
+    };
+    $("btnSaveClassOrder").onclick = saveClassOrder;
+    bindClassOrder();
+    root.querySelectorAll("[data-delete-class]").forEach((btn) => {
+      btn.onmousedown = (e) => e.stopPropagation();
+      btn.ondragstart = (e) => e.preventDefault();
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        deleteClassFromHome(btn.dataset.deleteClass, btn.dataset.className);
+      };
+    });
+  } else if (selecting) {
+    $("btnCancelClassQuiz").onclick = () => {
+      state.classQuizSelecting = false;
+      state.selectedClassIds.clear();
+      renderHome(state.homeClasses);
+    };
+    $("btnChooseQuizMode").onclick = openMultiQuizModeModal;
+    root.querySelectorAll("[data-select-class]").forEach((card) => {
+      card.onclick = () => {
+        const classId = card.dataset.selectClass;
+        if (state.selectedClassIds.has(classId)) state.selectedClassIds.delete(classId);
+        else state.selectedClassIds.add(classId);
+        renderHome(state.homeClasses);
+      };
+    });
+  } else {
+    $("btnSelectClassQuiz").onclick = () => {
+      state.classQuizSelecting = true;
+      state.selectedClassIds.clear();
+      renderHome(state.homeClasses);
+    };
+    $("btnEditClassOrder").onclick = () => {
+      state.classOrderEditing = true;
+      renderHome(state.homeClasses);
+    };
+    root.querySelectorAll("[data-open]").forEach((btn) => {
+      btn.onclick = () => openClass(btn.dataset.open);
+    });
+  }
+}
+
+async function deleteClassFromHome(classId, className) {
+  const yes = await confirmModal({
+    title: "학급 삭제",
+    message: `‘${className}’ 학급을 삭제할까요? 학생 사진과 학습 기록도 이 컴퓨터에서 함께 삭제되며 복구할 수 없습니다.`,
+    okText: "학급 삭제",
+    danger: true,
+  });
+  if (!yes) return;
+  busy(true);
+  try {
+    const res = await call("delete_class_by_id", classId);
+    if (!res.ok) return toast(res.error, true);
+    state.classOrderEditing = (res.classes || []).length > 0;
+    applyHomeData(res);
+    toast("학급과 저장된 자료를 삭제했어요.");
+  } finally {
+    busy(false);
+  }
+}
+
+function bindClassOrder() {
+  const grid = $("classGrid");
+  let dragged = null;
+  grid.querySelectorAll("[data-class-id]").forEach((card) => {
+    card.ondragstart = (e) => {
+      dragged = card;
+      card.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", card.dataset.classId);
+    };
+    card.ondragover = (e) => {
+      e.preventDefault();
+      if (!dragged || dragged === card) return;
+      const rect = card.getBoundingClientRect();
+      const nearSameRow = Math.abs(e.clientY - (rect.top + rect.height / 2)) < rect.height / 2;
+      const before = nearSameRow
+        ? e.clientX < rect.left + rect.width / 2
+        : e.clientY < rect.top + rect.height / 2;
+      grid.insertBefore(dragged, before ? card : card.nextSibling);
+    };
+    card.ondragend = () => {
+      card.classList.remove("dragging");
+      dragged = null;
+    };
+    card.ondrop = (e) => e.preventDefault();
+  });
+}
+
+async function saveClassOrder() {
+  const ids = [...$("classGrid").querySelectorAll("[data-class-id]")].map(
+    (card) => card.dataset.classId
+  );
+  busy(true);
+  try {
+    const res = await call("reorder_classes", ids);
+    if (!res.ok) return toast(res.error, true);
+    state.classOrderEditing = false;
+    applyHomeData(res);
+    toast("학급 순서를 저장했어요.");
+  } finally {
+    busy(false);
+  }
+}
+
+async function resetClassOrder() {
+  busy(true);
+  try {
+    const res = await call("reset_class_order");
+    if (!res.ok) return toast(res.error, true);
+    state.classOrderEditing = false;
+    applyHomeData(res);
+    toast("학년·반 오름차순으로 정리했어요.");
+  } finally {
+    busy(false);
+  }
+}
+
+function openMultiQuizModeModal() {
+  const count = state.selectedClassIds.size;
+  if (!count) return toast("퀴즈에 포함할 학급을 선택하세요.", true);
+  openModal(`
+    <h3>통합 퀴즈 방식 선택</h3>
+    <p>${count}개 학급의 사진 있는 학생을 섞어서 출제합니다.</p>
+    <div class="multi-mode-list">
+      ${(state.homeModes || [])
         .map(
-          (c) => `
-        <button class="card" type="button" data-open="${escapeHtml(c.id)}">
-          <h3>${escapeHtml(c.name || "학급")}</h3>
-          <p>${escapeHtml(c.school || "학교 미입력")}  ·  ${c.studentCount || 0}명${c.teacher ? "  ·  " + escapeHtml(c.teacher) : ""}</p>
-          <div class="go">눌러서 열기 →</div>
+          (mode) => `
+        <button class="multi-mode" type="button" data-multi-mode="${escapeHtml(mode.id)}">
+          <span class="mode-icon-inline">${modeIcon(mode.id)}</span>
+          <span><strong>${escapeHtml(mode.title)}</strong><small>${escapeHtml(mode.desc)}</small></span>
         </button>`
         )
         .join("")}
     </div>
-  `;
-  root.querySelectorAll("[data-open]").forEach((btn) => {
-    btn.onclick = () => openClass(btn.dataset.open);
-  });
+    <div class="modal-actions">
+      <button class="btn btn-sky btn-sm" type="button" data-act="no">취소</button>
+    </div>
+  `);
+  $("modalBox").onclick = (e) => {
+    if (e.target.closest("[data-act=no]")) return closeModal();
+    const mode = e.target.closest("[data-multi-mode]")?.dataset.multiMode;
+    if (!mode) return;
+    closeModal();
+    startMultiClassQuiz(mode);
+  };
+}
+
+async function startMultiClassQuiz(mode) {
+  const classIds = [...state.selectedClassIds];
+  busy(true);
+  try {
+    const res = await call("start_multi_class_quiz", classIds, mode);
+    if (!res.ok) return toast(res.error, true);
+    state.quiz = res.quiz;
+    state.flipped = false;
+    state.locked = false;
+    state.classQuizSelecting = false;
+    renderQuiz();
+    showScreen("quiz");
+  } finally {
+    busy(false);
+  }
 }
 
 async function openClass(id) {
@@ -207,17 +514,13 @@ function renderClass() {
   const body = $("classBody");
   if (state.tab === "퀴즈") {
     body.innerHTML = `
-      <div class="chips">
-        <span class="chip">사진 ${s.withPhoto}/${s.total}</span>
-        <span class="chip sky">정확도 ${escapeHtml(s.accuracyLabel)}</span>
-        <span class="chip peach">약함 ${s.weak}</span>
-        <span class="chip peach">복습 ${s.due}</span>
-      </div>
+      ${summaryInfographic(s)}
       <div class="grid-2">
         ${(p.modes || [])
           .map(
             (m) => `
           <button class="card mode-card" type="button" data-mode="${escapeHtml(m.id)}">
+            <span class="mode-icon" aria-hidden="true">${modeIcon(m.id)}</span>
             <h3>${escapeHtml(m.title)}</h3>
             <p>${escapeHtml(m.desc)}</p>
           </button>`
@@ -230,12 +533,20 @@ function renderClass() {
     });
   } else if (state.tab === "학생 명단") {
     body.innerHTML = `
-      <button class="btn btn-accent btn-sm" type="button" id="btnAddStu">+ 학생 추가</button>
-      <div style="margin-top:12px">
+      <div class="roster-toolbar">
+        <div>
+          <h3>학생 ${p.students?.length || 0}명</h3>
+          <p>학생은 이름 오름차순으로 표시됩니다.</p>
+        </div>
+        <div class="roster-actions">
+          <button class="btn btn-accent btn-sm" type="button" id="btnAddStu">+ 학생 추가</button>
+        </div>
+      </div>
+      <div class="student-list" id="studentList">
         ${(p.students || [])
           .map(
             (st) => `
-          <div class="student">
+          <div class="student" data-student-id="${escapeHtml(st.id)}">
             ${avatar(st.photoUrl)}
             <div class="num">${st.number ?? ""}번</div>
             <div class="name">${escapeHtml(st.name)}</div>
@@ -315,7 +626,7 @@ async function deleteClass() {
   if (!yes) return;
   const res = await call("delete_class");
   if (!res.ok) return toast(res.error, true);
-  renderHome(res.classes || []);
+  applyHomeData(res);
   showScreen("home");
 }
 
@@ -404,8 +715,8 @@ async function editStudentModal(id) {
 function importModal() {
   openModal(`
     <h3>엑셀 명렬표 불러오기</h3>
-    <p>나이스에서 해당 학급 사진명렬표를 엑셀로 다운받아 입력하면 됩니다.</p>
-    <div class="dropzone" id="modalDrop">여기로 파일을 끌어다 놓으세요<br/><span class="muted">클릭해도 선택할 수 있어요</span></div>
+    <p>나이스에서 받은 학급 사진명렬표를 한 번에 여러 개 선택할 수 있습니다.</p>
+    <div class="dropzone" id="modalDrop">여기로 엑셀 파일을 끌어다 놓으세요<br/><span class="muted">클릭해서 여러 파일을 선택해도 됩니다</span></div>
     <div class="modal-actions">
       <button class="btn btn-sky btn-sm" type="button" data-act="no">닫기</button>
     </div>
@@ -420,9 +731,9 @@ function importModal() {
   zone.ondrop = async (e) => {
     e.preventDefault();
     zone.classList.remove("on");
-    const file = [...e.dataTransfer.files].find((f) => f.name.toLowerCase().endsWith(".xlsx"));
-    if (!file) return toast("xlsx 파일을 놓아 주세요.", true);
-    await importFile(file);
+    const files = [...e.dataTransfer.files].filter((f) => f.name.toLowerCase().endsWith(".xlsx"));
+    if (!files.length) return toast("xlsx 파일을 놓아 주세요.", true);
+    await importFiles(files);
   };
   $("modalBox").onclick = (e) => {
     if (e.target.dataset.act === "no") closeModal();
@@ -435,10 +746,7 @@ async function pickExcel() {
   try {
     const res = await call("pick_excel");
     if (res.cancelled) return;
-    if (res.ok) {
-      toast(`${res.imported}명 학급을 저장했어요!`);
-      applyPack(res);
-    } else toast(res.error, true);
+    handleImportResult(res);
   } finally {
     busy(false);
   }
@@ -455,38 +763,35 @@ async function fileToB64(file) {
   return btoa(binary);
 }
 
-async function importFile(file) {
+function handleImportResult(res) {
+  if (!res.ok) {
+    toast(res.error || "엑셀 파일을 불러오지 못했습니다.", true);
+    return;
+  }
+  const failed = res.failedCount || 0;
+  const message = `${res.importedCount}개 학급, 학생 ${res.imported}명을 저장했어요!`;
+  toast(failed ? `${message} (${failed}개 파일 실패)` : message, failed > 0);
+  if (failed && res.errors?.length) {
+    const first = res.errors[0];
+    toast(`${first.file}: ${first.error}`, true);
+  }
+  applyHomeData(res);
+  showScreen("home");
+}
+
+async function importFiles(files) {
   closeModal();
   busy(true);
   try {
-    const b64 = await fileToB64(file);
-    const res = await call("import_excel_b64", b64);
-    if (res.ok) {
-      toast(`${res.imported}명 학급을 저장했어요!`);
-      applyPack(res);
-    } else toast(res.error, true);
+    const payload = [];
+    for (const file of files) {
+      payload.push({ name: file.name, data: await fileToB64(file) });
+    }
+    const res = await call("import_excel_files_b64", payload);
+    handleImportResult(res);
   } finally {
     busy(false);
   }
-}
-
-async function blankClassModal() {
-  openModal(`
-    <h3>빈 학급</h3>
-    <label class="field"><span>학급 이름</span><input id="fBlank" placeholder="예: 2-3반" /></label>
-    <div class="modal-actions">
-      <button class="btn btn-sky btn-sm" type="button" data-act="no">취소</button>
-      <button class="btn btn-accent btn-sm" type="button" data-act="yes">만들기</button>
-    </div>
-  `);
-  $("modalBox").onclick = async (e) => {
-    if (e.target.dataset.act === "no") return closeModal();
-    if (e.target.dataset.act !== "yes") return;
-    const name = $("fBlank").value;
-    closeModal();
-    const res = await call("create_blank_class", name);
-    applyPack(res);
-  };
 }
 
 async function startQuiz(mode) {
@@ -504,6 +809,14 @@ async function startQuiz(mode) {
   }
 }
 
+function restartQuiz(quiz) {
+  if (quiz.returnTo === "home" && quiz.classIds?.length) {
+    state.selectedClassIds = new Set(quiz.classIds);
+    return startMultiClassQuiz(quiz.mode);
+  }
+  return startQuiz(quiz.mode);
+}
+
 function renderQuiz() {
   const q = state.quiz;
   const root = $("screenQuiz");
@@ -516,12 +829,12 @@ function renderQuiz() {
         <div class="done-score">${q.correct} / ${q.answered}</div>
         <div style="display:flex;gap:10px;margin-top:18px">
           <button class="btn btn-sky" type="button" id="btnAgain">같은 모드 다시</button>
-          <button class="btn btn-accent" type="button" id="btnToClass">학급으로</button>
+          <button class="btn btn-accent" type="button" id="btnToClass">${q.returnTo === "home" ? "학급 목록으로" : "학급으로"}</button>
         </div>
       </div>
     `;
     $("btnQuizBack").onclick = backToClass;
-    $("btnAgain").onclick = () => startQuiz(q.mode);
+    $("btnAgain").onclick = () => restartQuiz(q);
     $("btnToClass").onclick = backToClass;
     return;
   }
@@ -534,7 +847,12 @@ function renderQuiz() {
   if (visual === "practice") {
     inner = `
       <div class="flip-card" id="flipCard">
-        ${state.flipped ? `<h2 class="h2">${escapeHtml(st.number)}. ${escapeHtml(st.name)}</h2>` : avatarBig(st.photoUrl)}
+        ${
+          state.flipped
+            ? `<h2 class="h2">${escapeHtml(st.number)}. ${escapeHtml(st.name)}</h2>
+               ${st.className ? `<span class="quiz-class-tag">${escapeHtml(st.className)}</span>` : ""}`
+            : avatarBig(st.photoUrl)
+        }
       </div>
       <p class="muted" style="margin-top:12px">사진을 클릭하면 이름이 보여요</p>
       <div style="display:flex;gap:10px;margin-top:18px">
@@ -545,6 +863,7 @@ function renderQuiz() {
   } else if (visual === "typeName") {
     inner = `
       ${avatarBig(st.photoUrl)}
+      ${st.className ? `<span class="quiz-class-tag">${escapeHtml(st.className)}</span>` : ""}
       <div class="type-row">
         <input id="typeInput" placeholder="이름을 입력하세요" autocomplete="off" />
         <button class="btn btn-accent" type="button" id="btnType">확인</button>
@@ -554,7 +873,7 @@ function renderQuiz() {
   } else if (visual === "nameToPhoto") {
     inner = `
       <h2 class="h2" style="font-size:40px;margin-top:8px">${escapeHtml(st.name)}</h2>
-      <p class="muted">${st.number ?? ""}번</p>
+      <p class="muted">${st.className ? escapeHtml(st.className) + " · " : ""}${st.number ?? ""}번</p>
       <div class="choices">
         ${(q.choices || [])
           .map(
@@ -575,11 +894,13 @@ function renderQuiz() {
           .map(
             (ch) => `
           <button class="choice" type="button" data-choice="${escapeHtml(ch.id)}">
-            ${escapeHtml(ch.number)}. ${escapeHtml(ch.name)}
+            <strong>${escapeHtml(ch.number)}. ${escapeHtml(ch.name)}</strong>
+            ${ch.className ? `<small>${escapeHtml(ch.className)}</small>` : ""}
           </button>`
           )
           .join("")}
       </div>
+      <button class="btn btn-danger btn-sm quiz-unknown" type="button" id="btnUnknown">모르겠어</button>
       <div class="feedback" id="feedback"></div>
     `;
   }
@@ -627,6 +948,15 @@ function bindQuizEvents(visual) {
   document.querySelectorAll("[data-choice]").forEach((btn) => {
     btn.onclick = () => choose(btn.dataset.choice);
   });
+  const unknown = $("btnUnknown");
+  if (unknown) unknown.onclick = markUnknown;
+}
+
+async function markUnknown() {
+  if (state.locked) return;
+  state.locked = true;
+  const res = await call("quiz_unknown");
+  await afterAnswer(res);
 }
 
 function showFeedback(res) {
@@ -685,6 +1015,10 @@ async function practice(easy) {
 }
 
 async function backToClass() {
+  if (state.quiz?.returnTo === "home") {
+    await loadHome();
+    return;
+  }
   busy(true);
   try {
     const res = await call("refresh_class");
@@ -697,29 +1031,34 @@ async function backToClass() {
 function setupDrop() {
   const overlay = $("dropOverlay");
   let dragCount = 0;
+  const isFileDrag = (e) => [...(e.dataTransfer?.types || [])].includes("Files");
   window.addEventListener("dragenter", (e) => {
+    if (!isFileDrag(e)) return;
     e.preventDefault();
     dragCount += 1;
     overlay.hidden = false;
   });
   window.addEventListener("dragleave", (e) => {
+    if (!isFileDrag(e)) return;
     e.preventDefault();
     dragCount = Math.max(0, dragCount - 1);
     if (dragCount === 0) overlay.hidden = true;
   });
-  window.addEventListener("dragover", (e) => e.preventDefault());
+  window.addEventListener("dragover", (e) => {
+    if (isFileDrag(e)) e.preventDefault();
+  });
   window.addEventListener("drop", async (e) => {
+    if (!isFileDrag(e)) return;
     e.preventDefault();
     dragCount = 0;
     overlay.hidden = true;
-    const file = [...e.dataTransfer.files].find((f) => f.name.toLowerCase().endsWith(".xlsx"));
-    if (!file) return;
-    await importFile(file);
+    const files = [...e.dataTransfer.files].filter((f) => f.name.toLowerCase().endsWith(".xlsx"));
+    if (!files.length) return;
+    await importFiles(files);
   });
 }
 
 function bindChrome() {
-  $("btnBlank").onclick = blankClassModal;
   $("btnImport").onclick = importModal;
   $("modalRoot").addEventListener("click", (e) => {
     if (e.target.dataset.close) closeModal();

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>이름 외우기</title>
+  <title>네임브릿지</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap" />
   <link rel="stylesheet" href="styles.css" />
@@ -18,13 +18,28 @@
   <div class="app">
     <header class="top">
       <div class="brand">
-        <span class="badge">선생님을 위한 이름 암기장</span>
-        <h1 id="appTitle">이름 외우기</h1>
-        <p class="sub" id="appSub">사진 명렬표를 불러오고, 퀴즈로 학생 이름을 익혀 보세요.</p>
+        <span class="badge">사진과 이름을 잇는 교사용 클래스 노트</span>
+        <h1 id="appTitle">네임브릿지</h1>
+        <p class="sub" id="appSub">학생의 얼굴과 이름을 연결하고, 자연스럽게 기억하세요.</p>
       </div>
-      <div class="top-actions home-only">
-        <button class="btn btn-sky" type="button" id="btnBlank">빈 학급</button>
-        <button class="btn btn-peach" type="button" id="btnImport">엑셀 불러오기</button>
+      <div class="top-side">
+        <div class="brand-art" aria-hidden="true">
+          <svg viewBox="0 0 180 92" role="img">
+            <path class="art-leaf" d="M137 18c21-8 33 3 26 21-5 13-18 18-32 12 1-14 2-24 6-33Z"/>
+            <circle class="art-head" cx="69" cy="27" r="15"/>
+            <path class="art-body" d="M40 77c2-25 13-37 29-37s28 12 31 37H40Z"/>
+            <path class="art-book" d="M89 44c15-8 31-6 42 3v31c-12-8-27-9-42-2V44Z"/>
+            <path class="art-page" d="M89 44c-12-8-26-6-36 3v31c10-8 23-9 36-2V44Z"/>
+            <path class="art-line" d="M89 47v28M102 52c7-2 13-1 19 2M102 61c7-2 13-1 19 2"/>
+            <circle class="art-spark" cx="30" cy="27" r="5"/>
+            <path class="art-spark" d="m111 19 3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7Z"/>
+          </svg>
+        </div>
+        <div class="top-actions home-only">
+          <button class="btn btn-sky" type="button" id="btnExportData">데이터 내보내기</button>
+          <button class="btn btn-ghost" type="button" id="btnImportData">데이터 불러오기</button>
+          <button class="btn btn-peach" type="button" id="btnImport">엑셀 파일 불러오기</button>
+        </div>
       </div>
     </header>
 
@@ -38,7 +53,7 @@
   <div class="drop-overlay" id="dropOverlay" hidden>
     <div class="drop-card">
       <strong>엑셀 명렬표를 놓으세요</strong>
-      <p>xlsx 파일을 여기에 떨어뜨리면 학급이 만들어집니다.</p>
+      <p>xlsx 파일을 여러 개 놓으면 각 파일별로 학급이 만들어집니다.</p>
     </div>
   </div>
 
