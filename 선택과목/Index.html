@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Noto Sans KR', sans-serif; background-color: #f1f5f9; }
+    .row-pending { background-color: #fff1f2 !important; }
+    .row-pending td { color: #e11d48; font-weight: 500; }
+    
+    .subject-card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); border: 1px solid #e2e8f0; padding: 24px; }
+    .styled-table { border-collapse: collapse; margin: 0; padding: 0; width: 100%; border: 1px solid #cbd5e1; }
+    .styled-table td { padding: 10px 12px; border: 1px solid #cbd5e1; font-size: 13px; line-height: 1.5; vertical-align: middle; }
+    
+    /* 가로 스크롤 제거 및 세로 스크롤만 유지 */
+    .scroll-container { 
+      max-height: 65vh; 
+      overflow-y: auto; 
+      overflow-x: hidden; 
+      border: 1px solid #e2e8f0; 
+      border-radius: 8px; 
+    }
+    
+    table { width: 100%; table-layout: auto; }
+    
+    /* 헤더 자동 줄바꿈 허용 */
+    .sticky-header thead th { 
+      position: sticky; 
+      top: -1px; 
+      z-index: 10; 
+      background-color: #f8fafc; 
+      box-shadow: inset 0 -1px 0 #cbd5e1; 
+      white-space: normal; 
+      word-break: keep-all; 
+    }
+    
+    td { word-break: break-word; }
+
+    /* 학번, 이름 열 줄바꿈 절대 금지 */
+    .nowrap-column { 
+      white-space: nowrap !important; 
+      min-width: max-content; 
+    }
+
+    /* 클릭 가능한 학생 이름 스타일 */
+    .clickable-name { cursor: pointer; color: #4f46e5; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; transition: all 0.2s; }
+    .clickable-name:hover { color: #312e81; background-color: #e0e7ff; border-radius: 4px; padding: 2px 4px; }
+
+    /* 모달 팝업 애니메이션 */
+    #studentModal { backdrop-filter: blur(4px); transition: opacity 0.3s; }
+    .modal-content { animation: slideDown 0.3s ease-out; }
+    @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    /* 🖨️ 인쇄 최적화 스타일 */
+    @media print {
+      @page { size: auto; margin: 10mm 5mm; }
+      body { background-color: #fff; padding: 0; zoom: 0.90; } 
+      .no-print { display: none !important; }
+      .scroll-container { max-height: none !important; overflow: visible !important; border: none !important; }
+      .sticky-header thead th { position: static !important; background-color: #f1f5f9 !important; } 
+      main, #resultContainer, .subject-card { border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; background: transparent; }
+      table { width: 100%; font-size: 10px !important; border-collapse: collapse !important; page-break-inside: auto !important; }
+      th, td, .styled-table td { padding: 4px 2px !important; border: 1px solid #475569 !important; font-size: 10px !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      tr { page-break-inside: avoid !important; }
+      .clickable-name { color: black !important; text-decoration: none !important; }
+    }
+  </style>
+</head>
+<body class="p-0 m-0 text-slate-800">
+
+  <header class="bg-[#1e293b] text-white p-5 shadow-md no-print">
+    <div class="max-w-7xl mx-auto flex justify-between items-center gap-4">
+      <div>
+        <h1 class="text-xl font-bold tracking-tight">2027학년도 과목 선택 확인 시스템(담임용)-2차선택</h1>
+        <p class="text-slate-400 text-xs mt-1">자료 기준 시간: <span id="refTime" class="text-emerald-400 font-medium">불러오는 중...</span></p>
+      </div>
+      
+      <div class="flex flex-col items-end gap-2.5">
+        <div class="flex gap-2">
+          <button onclick="downloadExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-1.5">
+            📊 엑셀 다운로드
+          </button>
+          <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-1.5">
+            🖨️ 인쇄 / PDF 저장
+          </button>
+        </div>
+        
+        <div class="flex gap-2">
+          <a href="https://cwyeoh.riroschool.kr/user.php?action=signin" target="_blank" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-600 shadow-sm transition-all flex items-center gap-1">
+            🏫 리로스쿨 바로가기
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-6">
+    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6 no-print border border-slate-200">
+      <div class="flex flex-col md:flex-row items-end gap-5">
+        
+        <div class="w-full md:w-1/4">
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">1단계: 학년 선택</label>
+          <div class="flex gap-2">
+            <button onclick="loadGradeData('1학년', this)" class="grade-btn flex-1 py-2.5 border-2 rounded-xl font-bold transition-all border-slate-200 text-slate-600 hover:border-slate-300">1학년</button>
+            <button onclick="loadGradeData('2학년', this)" class="grade-btn flex-1 py-2.5 border-2 rounded-xl font-bold transition-all border-slate-200 text-slate-600 hover:border-slate-300">2학년</button>
+          </div>
+        </div>
+        
+        <div class="w-full md:flex-1 flex gap-2 items-end">
+          <div class="flex-1">
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">2단계: 학급 선택 (명렬표)</label>
+            <select id="classSelect" onchange="switchView('class')" disabled class="w-full p-2.5 border-2 border-slate-200 rounded-xl outline-none disabled:bg-slate-50 font-medium text-sm transition-all focus:border-indigo-500">
+              <option value="">학년을 먼저 선택하세요</option>
+            </select>
+          </div>
+          <button id="btnClassSummary" onclick="switchView('summary')" disabled class="hidden md:block bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            📋 전체 과목 요약
+          </button>
+        </div>
+
+        <div class="w-full md:w-auto">
+          <button id="btnSubjectView" onclick="switchView('subject')" disabled class="w-full md:w-auto bg-slate-700 text-slate-400 px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all cursor-not-allowed">
+            📊 인원 통계
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="resultContainer" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 relative">
+      <div id="placeholder" class="py-24 text-center text-slate-400">
+        <p class="text-lg font-medium">조회할 학년과 보기 방식을 선택해 주세요.</p>
+        <p class="text-xs text-slate-400 mt-2">이름을 클릭하면 학생별 상세 과목 조회가 가능합니다.</p>
+      </div>
+      <div id="loader" class="hidden py-24 text-center">
+        <div class="animate-spin h-10 w-10 border-4 border-indigo-600 border-t-transparent rounded-full inline-block mb-3"></div>
+        <p class="text-indigo-600 text-sm font-semibold">시트 동기화 및 데이터 정리 중...</p>
+      </div>
+      
+      <div id="headerInfoArea"></div>
+      <div id="tableScrollArea" class="scroll-container hidden">
+        <div id="tableArea"></div>
+      </div>
+    </div>
+  </main>
+
+  <div id="studentModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+    <div class="modal-content bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[80vh]">
+      <div class="bg-indigo-600 px-6 py-4 flex justify-between items-center">
+        <h3 id="modalTitle" class="text-lg font-bold text-white tracking-tight">학생 상세 정보</h3>
+        <button onclick="closeStudentModal()" class="text-indigo-100 hover:text-white transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div id="modalBody" class="p-6 overflow-y-auto flex-1 bg-slate-50"></div>
+      <div class="bg-white p-4 border-t border-slate-100 text-center">
+        <button onclick="closeStudentModal()" class="bg-slate-800 hover:bg-slate-700 text-white px-6 py-2 rounded-xl font-medium text-sm transition-all shadow-sm">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let activeGrade = "";
+    let cachedHeaders = [];
+    let cachedData = [];
+    let cachedChoicesMap = {};  
+    let cachedChoiceGroups = []; 
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function showLoadError(message) {
+      document.getElementById('loader').classList.add('hidden');
+      document.getElementById('tableScrollArea').classList.add('hidden');
+      document.getElementById('placeholder').innerText = message;
+      document.getElementById('placeholder').classList.remove('hidden');
+    }
+
+    window.onload = () => {
+      google.script.run
+        .withSuccessHandler(t => document.getElementById('refTime').innerText = t)
+        .withFailureHandler(() => document.getElementById('refTime').innerText = "시간 정보 로드 실패")
+        .getDataTimestamp();
+    };
+
+    function loadGradeData(grade, btn) {
+      activeGrade = grade;
+      document.querySelectorAll('.grade-btn').forEach(b => b.className = "grade-btn flex-1 py-2.5 border-2 rounded-xl font-bold transition-all border-slate-200 text-slate-600 hover:border-slate-300");
+      btn.className = "grade-btn flex-1 py-2.5 border-2 rounded-xl font-bold transition-all border-indigo-600 bg-indigo-50 text-indigo-600 shadow-sm";
+      
+      const sel = document.getElementById('classSelect');
+      const btnSub = document.getElementById('btnSubjectView');
+      const btnSum = document.getElementById('btnClassSummary');
+      
+      sel.disabled = true; btnSub.disabled = true; btnSum.disabled = true;
+      btnSub.className = "w-full md:w-auto bg-slate-700 text-slate-400 px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all cursor-not-allowed";
+      sel.innerHTML = '<option>연결 중...</option>';
+      
+      document.getElementById('headerInfoArea').innerHTML = '';
+      document.getElementById('tableArea').innerHTML = '';
+      document.getElementById('tableScrollArea').classList.add('hidden');
+      document.getElementById('placeholder').classList.add('hidden');
+      document.getElementById('loader').classList.remove('hidden');
+
+      google.script.run.withSuccessHandler(res => {
+        document.getElementById('loader').classList.add('hidden');
+        if(!res || res.error || !res.data || res.data.length === 0) { 
+          showLoadError("데이터 바인딩에 실패했습니다. 시트 이름과 권한을 확인해 주세요.");
+          return; 
+        }
+        
+        cachedHeaders = res.headers;
+        cachedData = res.data;
+        cachedChoicesMap = res.choicesMap;
+        cachedChoiceGroups = res.choiceGroups;
+        if (res.timestamp) document.getElementById('refTime').innerText = res.timestamp;
+
+        const classes = [...new Set(res.data.map(r => r[0]))].filter(String).sort((a, b) => a - b);
+        sel.innerHTML = '<option value="">-- 학급 선택 (오류점검표) --</option>';
+        const allOption = document.createElement('option');
+        allOption.value = "ALL"; allOption.text = "✨ 학년 전체 오류점검표";
+        sel.appendChild(allOption);
+
+        classes.forEach(c => { 
+          const o = document.createElement('option'); o.value = c; o.text = c + '반 오류점검표'; sel.appendChild(o); 
+        });
+        
+        sel.disabled = false;
+        btnSum.disabled = false;
+        btnSub.disabled = false;
+        btnSub.className = "w-full md:w-auto bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all cursor-pointer";
+        
+        document.getElementById('placeholder').innerHTML = '<span class="font-medium text-slate-600">준비 완료!</span><br><span class="text-xs">학급 반을 선택하거나, 전체 과목 요약을 클릭하세요.</span>';
+        document.getElementById('placeholder').classList.remove('hidden');
+      }).withFailureHandler(() => {
+        showLoadError("데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      }).getFullGradeData(grade);
+    }
+
+    function switchView(mode) {
+      if (mode === 'class') renderClassTable();
+      else if (mode === 'summary') renderClassSummaryTable();
+      else if (mode === 'subject') { document.getElementById('classSelect').value = ""; renderSubjectTable(); }
+    }
+
+    function renderClassTable() {
+      const cls = document.getElementById('classSelect').value;
+      if(!cls) return;
+      
+      document.getElementById('placeholder').classList.add('hidden');
+      document.getElementById('tableScrollArea').classList.remove('hidden');
+      const refTimeValue = document.getElementById('refTime').innerText;
+      
+      let filtered = (cls === "ALL") ? cachedData : cachedData.filter(row => row[0] == cls);
+      let printTitle = `2027학년도 선택과목 확인 현황(${activeGrade} ${cls === "ALL" ? '전체' : cls + '반'})`;
+      let showClassColumn = (cls === "ALL"); 
+      
+      const statusIdx = cachedHeaders.indexOf('선택완료');
+      const nameIdx = cachedHeaders.findIndex(h => h.includes('이름') || h.includes('성명'));
+      const idIdx = cachedHeaders.findIndex(h => h.includes('학번')); 
+      const incompleteCount = filtered.filter(row => statusIdx !== -1 ? row[statusIdx] === "X" : false).length;
+
+      document.getElementById('headerInfoArea').innerHTML = `
+        <div class="text-center mb-6 relative">
+          <h2 class="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">${printTitle}</h2>
+          <p class="text-xs md:text-sm text-slate-400 mt-1.5 font-medium">자료 기준 시간: ${refTimeValue}</p>
+          <div class="status-badge mt-2 text-xs md:text-sm font-bold text-rose-600 bg-rose-50 inline-block px-3 py-1 rounded-full border border-rose-200 shadow-sm">
+            🔴 미완료 학생 수: <span class="text-base">${incompleteCount}</span>명
+          </div>
+          <p class="text-xs font-bold text-indigo-600 mt-2 no-print">💡 표에서 [이름]을 클릭하시면 학생 개인별 선택 과목을 확인할 수 있습니다.</p>
+        </div>
+      `;
+
+      let html = `<table class="w-full text-sm border-collapse border border-slate-300 sticky-header">`;
+      html += `<thead class="bg-slate-50"><tr>`;
+      cachedHeaders.forEach((h, i) => { 
+        if(showClassColumn || i !== 0) {
+          const isIdentityCol = (i === idIdx || i === nameIdx);
+          const headerClass = isIdentityCol ? 'p-2.5 border border-slate-300 text-slate-700 font-bold text-center nowrap-column' : 'p-2.5 border border-slate-300 text-slate-700 font-bold text-center';
+          html += `<th class="${headerClass}">${escapeHtml(h)}</th>`; 
+        }
+      });
+      html += `</tr></thead><tbody>`;
+      
+      filtered.forEach(row => {
+        const isPending = statusIdx !== -1 ? row[statusIdx] === "X" : false; 
+        const stuId = idIdx !== -1 ? row[idIdx] : '';
+        const stuName = nameIdx !== -1 ? row[nameIdx] : '';
+
+        html += `<tr class="${isPending ? 'row-pending' : 'hover:bg-slate-50/50 transition-colors'}">`;
+        row.forEach((cell, i) => {
+          if(showClassColumn || i !== 0) {
+            const isIdentityCol = (i === idIdx || i === nameIdx);
+            const cellClass = isIdentityCol ? 'p-2 border border-slate-300 text-center nowrap-column' : 'p-2 border border-slate-300 text-center';
+            
+            if (i === nameIdx && stuId && cachedChoicesMap[stuId]) {
+              html += `<td class="${cellClass}"><span class="clickable-name" onclick="showStudentModal(decodeURIComponent('${encodeURIComponent(stuId)}'), decodeURIComponent('${encodeURIComponent(stuName)}'))">${escapeHtml(cell) || '-'}</span></td>`;
+            } else {
+              html += `<td class="${cellClass}">${escapeHtml(cell) || '-'}</td>`;
+            }
+          }
+        });
+        html += `</tr>`;
+      });
+      html += `</tbody></table>`;
+      document.getElementById('tableArea').innerHTML = html;
+    }
+
+    function renderClassSummaryTable() {
+      const cls = document.getElementById('classSelect').value;
+      if(!cls) { alert('먼저 학급을 선택해 주세요.'); return; }
+      
+      document.getElementById('placeholder').classList.add('hidden');
+      document.getElementById('tableScrollArea').classList.remove('hidden');
+      const refTimeValue = document.getElementById('refTime').innerText;
+      
+      let filtered = (cls === "ALL") ? cachedData : cachedData.filter(row => row[0] == cls);
+      let printTitle = `2027학년도 선택과목 상세 요약표(${activeGrade} ${cls === "ALL" ? '전체' : cls + '반'})`;
+      
+      const idIdx = cachedHeaders.findIndex(h => h.includes('학번'));
+      const nameIdx = cachedHeaders.findIndex(h => h.includes('이름') || h.includes('성명'));
+
+      document.getElementById('headerInfoArea').innerHTML = `
+        <div class="mb-4 text-left no-print">
+          <button onclick="renderClassTable()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl border border-slate-300 shadow-sm transition-all flex items-center gap-1">
+            ⬅️ 오류 점검표로 돌아가기
+          </button>
+        </div>
+        <div class="text-center mb-6">
+          <h2 class="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">${printTitle}</h2>
+          <p class="text-xs md:text-sm text-slate-400 mt-1.5 font-medium">자료 기준 시간: ${refTimeValue}</p>
+        </div>
+      `;
+
+      let html = `<table class="w-full text-sm border-collapse border border-slate-300 sticky-header">`;
+      html += `<thead class="bg-indigo-50 border-b-2 border-indigo-200"><tr>
+                 <th class="p-2.5 border border-slate-300 text-indigo-900 font-bold text-center w-16 nowrap-column">학번</th>
+                 <th class="p-2.5 border border-slate-300 text-indigo-900 font-bold text-center w-20 nowrap-column">이름</th>`;
+      
+      cachedChoiceGroups.forEach(group => {
+        html += `<th class="p-2.5 border border-slate-300 text-indigo-900 font-bold text-center">${escapeHtml(group)}</th>`;
+      });
+      html += `</tr></thead><tbody>`;
+      
+      filtered.forEach(row => {
+        const stuId = idIdx !== -1 ? row[idIdx] : '';
+        const stuName = nameIdx !== -1 ? row[nameIdx] : '';
+        const choices = cachedChoicesMap[stuId] || {};
+
+        html += `<tr class="hover:bg-indigo-50/30 transition-colors">
+                   <td class="p-2 border border-slate-300 text-center font-medium nowrap-column">${escapeHtml(stuId)}</td>
+                   <td class="p-2 border border-slate-300 text-center font-bold text-slate-700 nowrap-column">${escapeHtml(stuName)}</td>`;
+        
+        cachedChoiceGroups.forEach(group => {
+          let subjectsList = choices[group] ? choices[group].map(escapeHtml).join('<br><span class="text-slate-300">|</span> ') : '<span class="text-slate-300">-</span>';
+          html += `<td class="p-2 border border-slate-300 text-center text-xs text-indigo-800 leading-tight">${subjectsList}</td>`;
+        });
+        html += `</tr>`;
+      });
+      html += `</tbody></table>`;
+      
+      document.getElementById('tableArea').innerHTML = html;
+    }
+
+    function renderSubjectTable() {
+      document.getElementById('placeholder').classList.add('hidden');
+      document.getElementById('headerInfoArea').innerHTML = '';
+      document.getElementById('tableArea').innerHTML = '';
+      document.getElementById('tableScrollArea').classList.add('hidden');
+      document.getElementById('loader').classList.remove('hidden');
+      const refTimeValue = document.getElementById('refTime').innerText;
+
+      google.script.run.withSuccessHandler(grid => {
+        document.getElementById('loader').classList.add('hidden');
+        if(!grid) { showLoadError("과목인원 시트 형식을 확인할 수 없습니다."); return; }
+
+        document.getElementById('headerInfoArea').innerHTML = `
+          <div class="text-center mb-6">
+            <h2 class="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">2027학년도 과목선택 인원수(${activeGrade})</h2>
+            <p class="text-xs md:text-sm text-slate-400 mt-1.5 font-medium">자료 기준 시간: ${refTimeValue}</p>
+          </div>`;
+        document.getElementById('tableScrollArea').classList.remove('hidden');
+
+        let html = `<div class="subject-card"><table class="styled-table sticky-header"><tbody>`;
+        for (let r = 0; r < grid.length; r++) {
+          html += `<tr>`;
+          for (let c = 0; c < grid[r].length; c++) {
+            let cell = grid[r][c]; if (cell.isChild) continue;
+            let align = (cell.align === 'general-left') ? 'left' : (cell.align === 'general-right' || cell.align === 'general') ? 'center' : cell.align;
+            html += `<td style="background-color: ${escapeHtml(cell.bg)}; font-weight: ${escapeHtml(cell.fw)}; color: ${escapeHtml(cell.co)}; text-align: ${escapeHtml(align)};" rowspan="${cell.rowspan}" colspan="${cell.colspan}">${escapeHtml(cell.text)}</td>`;
+          }
+          html += `</tr>`;
+        }
+        html += `</tbody></table></div>`;
+        document.getElementById('tableArea').innerHTML = html;
+      }).withFailureHandler(() => {
+        showLoadError("인원 통계를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      }).getFormattedSubjectStats(activeGrade);
+    }
+
+    function showStudentModal(stuId, stuName) {
+      document.getElementById('modalTitle').innerText = `${stuId} ${stuName} 학생 선택 과목`;
+      const choices = cachedChoicesMap[stuId] || {};
+      let bodyHtml = `<div class="space-y-4">`;
+      
+      if (Object.keys(choices).length === 0) {
+        bodyHtml += `<div class="text-center py-8 text-slate-400">데이터가 없습니다.</div>`;
+      } else {
+        cachedChoiceGroups.forEach(group => {
+          if(choices[group] && choices[group].length > 0) {
+            bodyHtml += `
+              <div class="bg-white p-4 rounded-xl shadow-sm border border-indigo-100 relative overflow-hidden">
+                <div class="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500"></div>
+                <h4 class="text-xs font-bold text-indigo-500 mb-2 pl-2">${escapeHtml(group)}</h4>
+                <div class="flex flex-wrap gap-2 pl-2">
+            `;
+            choices[group].forEach(subj => {
+              bodyHtml += `<span class="bg-slate-100 text-slate-800 px-3 py-1.5 rounded-lg text-sm font-semibold border border-slate-200">${escapeHtml(subj)}</span>`;
+            });
+            bodyHtml += `</div></div>`;
+          }
+        });
+      }
+      bodyHtml += `</div>`;
+      
+      document.getElementById('modalBody').innerHTML = bodyHtml;
+      document.getElementById('studentModal').classList.remove('hidden');
+    }
+
+    function closeStudentModal() {
+      document.getElementById('studentModal').classList.add('hidden');
+    }
+
+    // 화면의 테이블 데이터를 분석해 CSV파일로 강제 다운로드
+    function downloadExcel() {
+      const table = document.querySelector("#tableArea table");
+      if (!table) {
+        alert("현재 화면에 출력된 표 데이터가 없어 엑셀로 내보낼 수 없습니다.");
+        return;
+      }
+      
+      let csv = [];
+      const rows = table.querySelectorAll("tr");
+      
+      for (let i = 0; i < rows.length; i++) {
+        const row = [];
+        const cols = rows[i].querySelectorAll("th, td");
+        
+        for (let j = 0; j < cols.length; j++) {
+          let text = cols[j].innerText.trim();
+          text = text.replace(/"/g, '""');
+          row.push('"' + text + '"');
+        }
+        csv.push(row.join(","));
+      }
+      
+      const csvString = "\uFEFF" + csv.join("\n");
+      const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      
+      let titleElement = document.querySelector("#headerInfoArea h2");
+      let fileName = "선택과목_현황_자료.csv";
+      if (titleElement) {
+        fileName = titleElement.innerText.replace(/[\s]/g, "_") + ".csv";
+      }
+      
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
