@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Noto Sans KR', sans-serif; background-color: #f0fdfa; }
+
+    .subject-card { background: white; border-radius: 16px; border: 1px solid #99f6e4; padding: 8px; overflow: hidden; }
+    .styled-table { border-collapse: collapse; margin: 0; padding: 0; width: 100%; border: 1px solid #99f6e4; }
+    .styled-table td { padding: 10px 12px; border: 1px solid #99f6e4; font-size: 13px; line-height: 1.5; vertical-align: middle; }
+
+    .stats-wrap { overflow-x: auto; }
+    .stats-table {
+      table-layout: fixed;
+      width: 100%;
+      min-width: 720px;
+      border-collapse: collapse;
+      border: 1px solid #5eead4;
+    }
+    .stats-table td {
+      padding: 7px 8px;
+      border: 1px solid #99f6e4;
+      font-size: 12.5px;
+      line-height: 1.35;
+      vertical-align: middle;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+    .stats-table td.is-num {
+      text-align: center !important;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      overflow-wrap: normal;
+    }
+    .stats-table td.is-label {
+      text-align: center !important;
+      font-weight: 700;
+    }
+    .stats-table td.is-empty { color: transparent; }
+
+    .scroll-container { max-height: 62vh; overflow: auto; border: 1px solid #99f6e4; border-radius: 12px; background: white; }
+    .sticky-header thead th { position: sticky; top: -1px; z-index: 10; background-color: #f0fdfa; box-shadow: inset 0 -1px 0 #5eead4; }
+
+    .btn-stats { background-color: #ccfbf1; color: #0f766e; border: 2px solid #5eead4; }
+    .btn-stats:hover:not(:disabled) { background-color: #5eead4; color: white; }
+    .btn-stats:disabled { background-color: #f1f5f9; color: #cbd5e1; border-color: #e2e8f0; }
+
+    .grade-btn { border-color: #99f6e4; color: #2d3748; }
+    .grade-btn.active { background-color: #5eead4; border-color: #2dd4bf; color: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+
+    .clickable-subject { cursor: pointer; transition: all 0.2s; }
+    .clickable-subject:hover { background-color: #fef3c7 !important; color: #92400e !important; }
+
+    .subject-dropdown { max-height: 280px; overflow-y: auto; }
+    .roster-row { display: flex; gap: 16px; align-items: flex-start; min-width: min-content; }
+    .roster-col { flex: 0 0 260px; min-width: 240px; }
+
+    @media print {
+      @page { size: A4 landscape; margin: 10mm 5mm; }
+      body { background-color: #fff; padding: 0; zoom: 0.88; }
+      .no-print { display: none !important; }
+      .scroll-container { max-height: none !important; overflow: visible !important; border: none !important; }
+      .sticky-header thead th { position: static !important; background-color: #f8fafc !important; }
+      main, #resultContainer, .subject-card { border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
+      .roster-row { display: flex; flex-wrap: nowrap; gap: 8px; }
+      .roster-col { flex: 1 1 0; min-width: 0; break-inside: avoid; }
+      table { width: 100%; font-size: 10px !important; border-collapse: collapse !important; }
+      th, td, .styled-table td, .stats-table td { padding: 4px 3px !important; border: 1px solid #94a3b8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .stats-table { min-width: 0 !important; }
+      .status-badge { border: 1px solid #0d9488 !important; color: #0d9488 !important; }
+    }
+  </style>
+</head>
+<body class="p-0 m-0 text-slate-700">
+
+  <header class="bg-white border-b-4 border-[#5eead4] p-5 shadow-sm no-print">
+    <div class="max-w-7xl mx-auto flex justify-between items-center gap-4">
+      <div>
+        <h1 class="text-xl font-bold tracking-tight text-teal-800">🌿 교과목별 2차 선택 명단 조회(교과용)</h1>
+        <p class="text-teal-600/70 text-xs mt-1 font-medium">자료 기준: <span id="refTime">불러오는 중...</span></p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="downloadExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-1.5">
+          📊 엑셀 다운로드
+        </button>
+        <button onclick="window.print()" class="bg-[#5eead4] hover:bg-[#2dd4bf] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-1.5">
+          🖨️ 인쇄 / PDF 저장
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-6">
+    <div class="bg-white rounded-2xl shadow-sm p-6 mb-6 no-print border border-teal-100">
+      <div class="flex flex-col md:flex-row items-end gap-5">
+        <div class="w-full md:w-1/4">
+          <label class="block text-xs font-bold text-teal-600 uppercase tracking-wider mb-2">① 학년 선택</label>
+          <div class="flex gap-2">
+            <button onclick="loadGradeData('1학년', this)" class="grade-btn flex-1 py-2.5 border-2 rounded-xl font-bold transition-all bg-white hover:bg-teal-50">1학년</button>
+            <button onclick="loadGradeData('2학년', this)" class="grade-btn flex-1 py-2.5 border-2 rounded-xl font-bold transition-all bg-white hover:bg-teal-50">2학년</button>
+          </div>
+        </div>
+
+        <div class="w-full md:w-auto">
+          <label class="block text-xs font-bold text-teal-600 uppercase tracking-wider mb-2">② 통계 확인</label>
+          <button id="btnSubjectView" onclick="switchView('stats')" disabled class="w-full md:w-auto btn-stats px-6 py-3 rounded-xl text-sm font-bold shadow-sm transition-all cursor-not-allowed">
+            📊 과목별 인원 통계
+          </button>
+        </div>
+
+        <div class="w-full md:flex-1 relative">
+          <label class="block text-xs font-bold text-teal-600 uppercase tracking-wider mb-2">③ 교과목 선택 (여러 과목 가능)</label>
+          <button type="button" id="subjectSelectBtn" onclick="toggleSubjectDropdown()" disabled
+                  class="w-full p-2.5 border-2 border-teal-100 rounded-xl outline-none bg-white text-left text-sm font-medium disabled:bg-slate-50 disabled:text-slate-400">
+            <span id="subjectSelectLabel">학년을 먼저 선택하세요</span>
+          </button>
+          <div id="subjectDropdown" class="hidden absolute left-0 right-0 mt-1 z-30 bg-white border-2 border-teal-200 rounded-xl shadow-lg">
+            <div class="flex justify-between items-center px-3 py-2 border-b border-teal-100">
+              <span class="text-[11px] font-bold text-teal-600">여러 과목을 체크하면 명단이 가로로 나란히 표시됩니다</span>
+              <button type="button" onclick="clearSubjectSelection()" class="text-[11px] font-bold text-slate-500 hover:text-rose-600">선택 해제</button>
+            </div>
+            <div id="subjectOptions" class="subject-dropdown p-2"></div>
+          </div>
+          <div id="subjectChips" class="flex flex-wrap gap-1.5 mt-2"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="resultContainer" class="bg-white rounded-2xl shadow-sm border border-teal-100 p-6">
+      <div id="placeholder" class="py-24 text-center text-teal-300">
+        <p class="text-lg font-medium">상단 메뉴에서 학년과 과목을 선택해 주세요.</p>
+        <p class="text-xs mt-2">교과 선생님들을 위한 명단 확인 시스템입니다.</p>
+      </div>
+      <div id="loader" class="hidden py-24 text-center">
+        <div class="animate-spin h-10 w-10 border-4 border-teal-400 border-t-transparent rounded-full inline-block mb-3"></div>
+        <p class="text-teal-600 text-sm font-semibold">학생 데이터를 분석 중입니다...</p>
+      </div>
+      <div id="headerInfoArea"></div>
+      <div id="tableScrollArea" class="scroll-container hidden">
+        <div id="tableArea"></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let activeGrade = "";
+    let cachedSubjectData = null;
+    let cachedStatsHtml = "";
+
+    window.onload = () => {
+      google.script.run.withSuccessHandler(t => document.getElementById('refTime').innerText = t).getDataTimestamp();
+      document.addEventListener('click', (e) => {
+        const wrap = document.getElementById('subjectDropdown') && document.getElementById('subjectDropdown').parentElement;
+        if (wrap && !wrap.contains(e.target)) closeSubjectDropdown();
+      });
+    };
+
+    function isEnrolled(val) {
+      const v = String(val == null ? '' : val).trim();
+      return v === "1" || v === "O" || v === "o" || v === "○";
+    }
+
+    function getSelectedIndexes() {
+      return Array.from(document.querySelectorAll('#subjectOptions input[type="checkbox"]:checked')).map(cb => cb.value);
+    }
+
+    function setSubjectChecks(indexes) {
+      const want = new Set((indexes || []).map(String));
+      document.querySelectorAll('#subjectOptions input[type="checkbox"]').forEach(cb => {
+        cb.checked = want.has(cb.value);
+      });
+      updateSubjectPickerUI();
+    }
+
+    function updateSubjectPickerUI() {
+      const selected = getSelectedIndexes();
+      const label = document.getElementById('subjectSelectLabel');
+      const chips = document.getElementById('subjectChips');
+      if (!cachedSubjectData) {
+        label.innerText = '학년을 먼저 선택하세요';
+        chips.innerHTML = '';
+        return;
+      }
+      if (selected.length === 0) {
+        label.innerText = '-- 교과목 선택 (여러 과목 가능) --';
+        chips.innerHTML = '';
+        return;
+      }
+      label.innerText = selected.length + '개 과목 선택됨';
+      chips.innerHTML = selected.map(idx => {
+        const subj = cachedSubjectData.subjects.find(s => String(s.index) === String(idx));
+        const name = subj ? subj.displayName : idx;
+        return `<span class="inline-flex items-center gap-1 bg-teal-50 text-teal-800 text-xs font-bold px-2 py-1 rounded-lg border border-teal-200">
+          ${name}
+          <button type="button" onclick="uncheckSubject('${idx}')" class="text-teal-500 hover:text-rose-600 leading-none">×</button>
+        </span>`;
+      }).join('');
+    }
+
+    function toggleSubjectDropdown() {
+      if (document.getElementById('subjectSelectBtn').disabled) return;
+      document.getElementById('subjectDropdown').classList.toggle('hidden');
+    }
+
+    function closeSubjectDropdown() {
+      document.getElementById('subjectDropdown').classList.add('hidden');
+    }
+
+    function uncheckSubject(index) {
+      const cb = document.querySelector('#subjectOptions input[value="' + index + '"]');
+      if (cb) cb.checked = false;
+      onSubjectSelectionChange();
+    }
+
+    function clearSubjectSelection() {
+      document.querySelectorAll('#subjectOptions input[type="checkbox"]').forEach(cb => { cb.checked = false; });
+      updateSubjectPickerUI();
+    }
+
+    function onSubjectSelectionChange() {
+      updateSubjectPickerUI();
+      if (getSelectedIndexes().length === 0) {
+        document.getElementById('headerInfoArea').innerHTML = '';
+        document.getElementById('tableArea').innerHTML = '';
+        document.getElementById('tableScrollArea').classList.add('hidden');
+        document.getElementById('placeholder').innerText = "조회할 과목을 선택하거나 [과목별 인원 통계]를 클릭하세요.";
+        document.getElementById('placeholder').classList.remove('hidden');
+        return;
+      }
+      renderRosterTable();
+    }
+
+    function getScienceTrackBadgeHtml() {
+      if (activeGrade !== '1학년' || !cachedSubjectData || !cachedSubjectData.scienceTrack) return '';
+      const n = cachedSubjectData.scienceTrack.count;
+      return `
+        <div class="mt-3">
+          <span onclick="renderScienceTrackRoster()"
+                class="clickable-subject inline-flex items-center gap-1.5 text-sm font-bold text-indigo-800 bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-200 shadow-sm">
+            🔬 과학중점과정 이수 예정:
+            <span class="text-base font-black border-b border-dashed border-indigo-400">${n}</span>명
+            <span class="text-[10px] font-medium text-indigo-500">(클릭 시 명단)</span>
+          </span>
+        </div>`;
+    }
+
+    function getStatsHintHtml() {
+      if (activeGrade === '1학년') {
+        return `💡 표 안의 [과목명] 또는 [과학중점과정 이수 예정]을 클릭하시면 해당 명단으로 이동합니다.`;
+      }
+      return `💡 표 안의 [과목명]을 클릭하시면 해당 과목 명단으로 이동합니다.`;
+    }
+
+    function loadGradeData(grade, btn) {
+      activeGrade = grade;
+      cachedStatsHtml = "";
+      document.querySelectorAll('.grade-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const selBtn = document.getElementById('subjectSelectBtn');
+      const btnSub = document.getElementById('btnSubjectView');
+      selBtn.disabled = true;
+      btnSub.disabled = true;
+      btnSub.className = "w-full md:w-auto btn-stats px-6 py-3 rounded-xl text-sm font-bold shadow-sm cursor-not-allowed opacity-50";
+      document.getElementById('subjectSelectLabel').innerText = '로딩 중...';
+      document.getElementById('subjectOptions').innerHTML = '';
+      document.getElementById('subjectChips').innerHTML = '';
+      closeSubjectDropdown();
+
+      document.getElementById('headerInfoArea').innerHTML = '';
+      document.getElementById('tableArea').innerHTML = '';
+      document.getElementById('tableScrollArea').classList.add('hidden');
+      document.getElementById('placeholder').classList.add('hidden');
+      document.getElementById('loader').classList.remove('hidden');
+
+      google.script.run.withSuccessHandler(res => {
+        document.getElementById('loader').classList.add('hidden');
+        if (!res || !res.subjects || res.subjects.length === 0) {
+          document.getElementById('placeholder').innerText = "과목 데이터를 불러오지 못했습니다.";
+          document.getElementById('placeholder').classList.remove('hidden');
+          return;
+        }
+
+        let nameCount = {};
+        res.subjects.forEach(s => {
+          nameCount[s.name] = (nameCount[s.name] || 0) + 1;
+          s.occurrence = nameCount[s.name];
+        });
+        res.subjects.forEach(s => {
+          s.displayName = nameCount[s.name] > 1 ? (s.name + " (" + s.occurrence + "학기)") : s.name;
+        });
+
+        cachedSubjectData = res;
+        document.getElementById('subjectOptions').innerHTML = res.subjects.map(subj => `
+          <label class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-teal-50 cursor-pointer text-sm">
+            <input type="checkbox" value="${subj.index}" onchange="onSubjectSelectionChange()" class="rounded border-teal-300 text-teal-600">
+            <span>${subj.displayName}</span>
+          </label>`).join('');
+        updateSubjectPickerUI();
+
+        selBtn.disabled = false;
+        btnSub.disabled = false;
+        btnSub.className = "w-full md:w-auto btn-stats px-6 py-3 rounded-xl text-sm font-bold shadow-sm transition-all cursor-pointer";
+        document.getElementById('placeholder').innerText = "조회할 과목을 선택하거나 [과목별 인원 통계]를 클릭하세요.";
+        document.getElementById('placeholder').classList.remove('hidden');
+      }).getFullSubjectData(grade);
+    }
+
+    function switchView(mode) {
+      if (mode === 'roster') renderRosterTable();
+      else if (mode === 'stats') {
+        clearSubjectSelection();
+        closeSubjectDropdown();
+        renderStatsTable();
+      }
+    }
+
+    function jumpToSubject(subjectIndex) {
+      const exists = document.querySelector('#subjectOptions input[value="' + subjectIndex + '"]');
+      if (exists) {
+        setSubjectChecks([subjectIndex]);
+        closeSubjectDropdown();
+        renderRosterTable(true);
+      } else {
+        alert("일치하는 과목 명단이 없습니다.");
+      }
+    }
+
+    function restoreStatsTable() {
+      clearSubjectSelection();
+      closeSubjectDropdown();
+      const refTimeValue = document.getElementById('refTime').innerText;
+      document.getElementById('headerInfoArea').innerHTML = `
+        <div class="text-center mb-6">
+          <h2 class="text-xl md:text-2xl font-bold text-teal-800 tracking-tight">2027학년도 과목선택 인원 통계(${activeGrade})_2차</h2>
+          <p class="text-xs md:text-sm text-teal-500 mt-1.5 font-medium">자료 기준 시간: ${refTimeValue}</p>
+          ${getScienceTrackBadgeHtml()}
+          <p class="text-[10px] font-bold text-orange-600 bg-orange-50 inline-block px-3 py-1 rounded mt-2 border border-orange-100 no-print">
+            ${getStatsHintHtml()}
+          </p>
+        </div>`;
+      document.getElementById('tableArea').innerHTML = cachedStatsHtml;
+      document.getElementById('tableScrollArea').classList.remove('hidden');
+      document.getElementById('placeholder').classList.add('hidden');
+    }
+
+    function renderScienceTrackRoster() {
+      if (!cachedSubjectData || !cachedSubjectData.scienceTrack) {
+        alert('과학중점과정 데이터를 불러오지 못했습니다.');
+        return;
+      }
+      clearSubjectSelection();
+      closeSubjectDropdown();
+      document.getElementById('placeholder').classList.add('hidden');
+      document.getElementById('tableScrollArea').classList.remove('hidden');
+
+      const refTimeValue = document.getElementById('refTime').innerText;
+      const students = cachedSubjectData.scienceTrack.students || [];
+      const count = students.length;
+      let backButtonHtml = '';
+      if (cachedStatsHtml) {
+        backButtonHtml = `
+          <div class="mb-4 text-left no-print">
+            <button onclick="restoreStatsTable()" class="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold px-4 py-2 rounded-xl border border-amber-200 shadow-sm transition-all flex items-center gap-1">
+              ⬅️ 전체 인원 통계표로 돌아가기
+            </button>
+          </div>`;
+      }
+
+      document.getElementById('headerInfoArea').innerHTML = `
+        ${backButtonHtml}
+        <div class="text-center mb-6">
+          <h2 class="text-xl md:text-2xl font-bold text-teal-800 tracking-tight">2027학년도 [과학중점과정 이수 예정] 명단</h2>
+          <p class="text-xs md:text-sm text-teal-500 mt-1.5 font-medium">자료 기준 시간: ${refTimeValue}</p>
+          <p class="text-[10px] text-indigo-600 mt-1">기준: 1학년안내 시트 · 과학과목 선택 수(F열) = 4</p>
+          <div class="status-badge mt-2 text-xs md:text-sm font-bold text-indigo-700 bg-indigo-50 inline-block px-4 py-1.5 rounded-full border border-indigo-200 shadow-sm">
+            👥 이수 예정 인원: <span class="text-base font-black">${count}</span>명
+          </div>
+        </div>`;
+
+      let html = `<table class="w-full text-sm border-collapse border border-teal-100 sticky-header">`;
+      html += `<thead class="bg-teal-50"><tr>
+                 <th class="p-2.5 border border-teal-100 text-teal-800 font-bold text-center w-16">순번</th>
+                 <th class="p-2.5 border border-teal-100 text-teal-800 font-bold text-center w-24">학번</th>
+                 <th class="p-2.5 border border-teal-100 text-teal-800 font-bold text-center w-28">이름</th>
+                 <th class="p-2.5 border border-teal-100 text-teal-800 font-bold text-center">비고</th>
+               </tr></thead><tbody>`;
+      students.forEach((stu, idx) => {
+        html += `<tr class="hover:bg-teal-50/50 transition-colors">
+                   <td class="p-2 border border-teal-50 text-center text-teal-400">${idx + 1}</td>
+                   <td class="p-2 border border-teal-50 text-center font-medium">${stu.id || '-'}</td>
+                   <td class="p-2 border border-teal-50 text-center whitespace-nowrap font-bold text-teal-900">${stu.name || '-'}</td>
+                   <td class="p-2 border border-teal-50 text-center text-indigo-600 text-xs">과학중점</td>
+                 </tr>`;
+      });
+      if (count === 0) html += `<tr><td colspan="4" class="py-12 text-center text-slate-400">해당 학생이 없습니다.</td></tr>`;
+      html += `</tbody></table>`;
+      document.getElementById('tableArea').innerHTML = html;
+    }
+
+    function buildRosterTableHtml(students) {
+      let html = `<table class="w-full text-sm border-collapse border border-teal-100 sticky-header">`;
+      html += `<thead class="bg-teal-50"><tr>
+                 <th class="p-2 border border-teal-100 text-teal-800 font-bold text-center">순번</th>
+                 <th class="p-2 border border-teal-100 text-teal-800 font-bold text-center">학번</th>
+                 <th class="p-2 border border-teal-100 text-teal-800 font-bold text-center">이름</th>
+               </tr></thead><tbody>`;
+      students.forEach((row, idx) => {
+        html += `<tr class="hover:bg-teal-50/50 transition-colors">
+                   <td class="p-1.5 border border-teal-50 text-center text-teal-400">${idx + 1}</td>
+                   <td class="p-1.5 border border-teal-50 text-center font-medium">${row[1] || '-'}</td>
+                   <td class="p-1.5 border border-teal-50 text-center whitespace-nowrap font-bold text-teal-900">${row[2] || '-'}</td>
+                 </tr>`;
+      });
+      if (students.length === 0) {
+        html += `<tr><td colspan="3" class="py-8 text-center text-slate-400 text-xs">선택 학생이 없습니다.</td></tr>`;
+      }
+      html += `</tbody></table>`;
+      return html;
+    }
+
+    function renderRosterTable(fromStatsView) {
+      const selectedIndexes = getSelectedIndexes();
+      if (selectedIndexes.length === 0) return;
+      document.getElementById('placeholder').classList.add('hidden');
+      document.getElementById('tableScrollArea').classList.remove('hidden');
+      const refTimeValue = document.getElementById('refTime').innerText;
+
+      const targets = selectedIndexes
+        .map(idx => cachedSubjectData.subjects.find(s => String(s.index) === String(idx)))
+        .filter(Boolean);
+      if (targets.length === 0) return;
+
+      let backButtonHtml = "";
+      if (fromStatsView && cachedStatsHtml) {
+        backButtonHtml = `
+          <div class="mb-4 text-left no-print">
+            <button onclick="restoreStatsTable()" class="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold px-4 py-2 rounded-xl border border-amber-200 shadow-sm transition-all flex items-center gap-1">
+              ⬅️ 전체 인원 통계표로 돌아가기
+            </button>
+          </div>`;
+      }
+
+      const titleNames = targets.map(s => s.displayName).join(', ');
+      const totalCount = targets.reduce((sum, subj) => {
+        return sum + cachedSubjectData.data.filter(row => isEnrolled(row[subj.index])).length;
+      }, 0);
+
+      document.getElementById('headerInfoArea').innerHTML = `
+        ${backButtonHtml}
+        <div class="text-center mb-6">
+          <h2 class="text-xl md:text-2xl font-bold text-teal-800 tracking-tight">2027학년도 [${titleNames}] 수강 명단</h2>
+          <p class="text-xs md:text-sm text-teal-500 mt-1.5 font-medium">자료 기준 시간: ${refTimeValue}</p>
+          <div class="status-badge mt-2 text-xs md:text-sm font-bold text-teal-700 bg-teal-50 inline-block px-4 py-1.5 rounded-full border border-teal-200 shadow-sm">
+            👥 ${targets.length}개 과목 · 합계 <span class="text-base font-black">${totalCount}</span>명
+          </div>
+        </div>`;
+
+      let html = `<div class="roster-row">`;
+      targets.forEach(subj => {
+        const enrolled = cachedSubjectData.data.filter(row => isEnrolled(row[subj.index]));
+        html += `<div class="roster-col">
+          <h3 class="text-center text-sm font-bold text-teal-800 mb-2 leading-snug">${subj.displayName}</h3>
+          <div class="text-center text-[11px] text-teal-600 font-semibold mb-2">${enrolled.length}명</div>
+          ${buildRosterTableHtml(enrolled)}
+        </div>`;
+      });
+      html += `</div>`;
+      document.getElementById('tableArea').innerHTML = html;
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function getStatsUsedBounds(grid) {
+      let lastR = 0, lastC = 0;
+      for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < grid[r].length; c++) {
+          const cell = grid[r][c];
+          if (!cell || cell.isChild) continue;
+          if (String(cell.text || '').trim() === '') continue;
+          lastR = Math.max(lastR, r + (cell.rowspan || 1) - 1);
+          lastC = Math.max(lastC, c + (cell.colspan || 1) - 1);
+        }
+      }
+      const maxC = grid[0] ? grid[0].length - 1 : 0;
+      return {
+        lastR: Math.min(lastR, grid.length - 1),
+        lastC: Math.min(lastC, maxC)
+      };
+    }
+
+    function normalizeStatsBg(bg) {
+      const v = String(bg || '').replace(/\s/g, '').toLowerCase();
+      if (!v || v === '#ffffff' || v === '#fff' || v === 'white' || v === 'transparent') return '#ffffff';
+      return bg;
+    }
+
+    function normalizeStatsColor(co) {
+      const v = String(co || '').replace(/\s/g, '').toLowerCase();
+      if (!v || v === '#000000' || v === '#000' || v === 'black') return '#134e4a';
+      return co;
+    }
+
+    function renderStatsTable() {
+      if (cachedStatsHtml) {
+        restoreStatsTable();
+        return;
+      }
+
+      document.getElementById('placeholder').classList.add('hidden');
+      document.getElementById('headerInfoArea').innerHTML = '';
+      document.getElementById('tableArea').innerHTML = '';
+      document.getElementById('tableScrollArea').classList.add('hidden');
+      document.getElementById('loader').classList.remove('hidden');
+      const refTimeValue = document.getElementById('refTime').innerText;
+
+      google.script.run.withSuccessHandler(grid => {
+        document.getElementById('loader').classList.add('hidden');
+        if (!grid) {
+          document.getElementById('placeholder').innerText = "통계 데이터를 불러올 수 없습니다.";
+          document.getElementById('placeholder').classList.remove('hidden');
+          return;
+        }
+        document.getElementById('headerInfoArea').innerHTML = `
+          <div class="text-center mb-6">
+            <h2 class="text-xl md:text-2xl font-bold text-teal-800 tracking-tight">2027학년도 과목선택 인원 통계(${activeGrade})_2차</h2>
+            <p class="text-xs md:text-sm text-teal-500 mt-1.5 font-medium">자료 기준 시간: ${refTimeValue}</p>
+            ${getScienceTrackBadgeHtml()}
+            <p class="text-[10px] font-bold text-orange-600 bg-orange-50 inline-block px-3 py-1 rounded mt-2 border border-orange-100 no-print">
+              ${getStatsHintHtml()}
+            </p>
+          </div>`;
+        document.getElementById('tableScrollArea').classList.remove('hidden');
+
+        const validSubjectNames = [...new Set(cachedSubjectData.subjects.map(s => s.name))];
+        let renderOccurrences = {};
+        const bounds = getStatsUsedBounds(grid);
+        const colCount = bounds.lastC + 1;
+        const firstColW = Math.max(12, Math.round(140 / Math.max(colCount, 1)));
+        const otherColW = ((100 - firstColW) / Math.max(colCount - 1, 1)).toFixed(2);
+
+        let html = `<div class="subject-card"><div class="stats-wrap"><table class="stats-table"><colgroup>`;
+        for (let i = 0; i < colCount; i++) {
+          html += `<col style="width:${i === 0 ? firstColW : otherColW}%">`;
+        }
+        html += `</colgroup><tbody>`;
+
+        for (let r = 0; r <= bounds.lastR; r++) {
+          html += `<tr>`;
+          for (let c = 0; c <= bounds.lastC; c++) {
+            let cell = grid[r][c];
+            if (!cell || cell.isChild) continue;
+            const rowspan = Math.min(cell.rowspan || 1, bounds.lastR - r + 1);
+            const colspan = Math.min(cell.colspan || 1, bounds.lastC - c + 1);
+            const cellText = String(cell.text || '').trim();
+            const isNum = /^\d+(\.\d+)?$/.test(cellText);
+            const isLabel = !isNum && (rowspan > 1 || r === 0 || cell.fw === 'bold');
+            const classes = [
+              isNum ? 'is-num' : '',
+              isLabel ? 'is-label' : '',
+              cellText === '' ? 'is-empty' : ''
+            ].filter(Boolean).join(' ');
+
+            let align = cell.align;
+            if (align === 'general-left') align = 'left';
+            else if (align === 'general-right' || align === 'general' || !align) align = 'center';
+            if (isNum || isLabel) align = 'center';
+
+            const bg = normalizeStatsBg(cell.bg);
+            const color = normalizeStatsColor(cell.co);
+            const style = `background-color:${bg};color:${color};text-align:${align};`;
+
+            if (validSubjectNames.includes(cellText)) {
+              renderOccurrences[cellText] = (renderOccurrences[cellText] || 0) + 1;
+              const targetSubj = cachedSubjectData.subjects.find(s => s.name === cellText && s.occurrence === renderOccurrences[cellText]);
+              if (targetSubj) {
+                html += `<td style="${style}" class="clickable-subject ${classes}" onclick="jumpToSubject('${targetSubj.index}')" rowspan="${rowspan}" colspan="${colspan}"><span class="border-b border-dashed border-teal-500">${escapeHtml(cellText)}</span></td>`;
+                continue;
+              }
+            }
+            html += `<td style="${style}" class="${classes}" rowspan="${rowspan}" colspan="${colspan}">${escapeHtml(cellText)}</td>`;
+          }
+          html += `</tr>`;
+        }
+        html += `</tbody></table></div></div>`;
+        cachedStatsHtml = html;
+        document.getElementById('tableArea').innerHTML = html;
+      }).getFormattedSubjectStats(activeGrade);
+    }
+
+    function downloadExcel() {
+      const tables = document.querySelectorAll("#tableArea table");
+      if (!tables.length) {
+        alert("현재 화면에 출력된 표 데이터가 없어 엑셀로 내보낼 수 없습니다.");
+        return;
+      }
+      let csv = [];
+      tables.forEach((table, tIdx) => {
+        const colTitle = table.closest('.roster-col') && table.closest('.roster-col').querySelector('h3');
+        if (colTitle) csv.push('"' + colTitle.innerText.replace(/"/g, '""') + '"');
+        const rows = table.querySelectorAll("tr");
+        for (let i = 0; i < rows.length; i++) {
+          const row = [];
+          const cols = rows[i].querySelectorAll("th, td");
+          for (let j = 0; j < cols.length; j++) {
+            row.push('"' + cols[j].innerText.trim().replace(/"/g, '""') + '"');
+          }
+          csv.push(row.join(","));
+        }
+        if (tIdx < tables.length - 1) csv.push("");
+      });
+      const csvString = "\uFEFF" + csv.join("\n");
+      const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      let titleElement = document.querySelector("#headerInfoArea h2");
+      let fileName = "교과별_선택현황_자료.csv";
+      if (titleElement) fileName = titleElement.innerText.replace(/[\s]/g, "_") + ".csv";
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
