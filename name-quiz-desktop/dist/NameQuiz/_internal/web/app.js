@@ -19,6 +19,7 @@ const state = {
   classOrderEditing: false,
   classQuizSelecting: false,
   selectedClassIds: new Set(),
+  overviewPack: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -125,10 +126,21 @@ function homeOverviewInfographic(overview) {
       <div class="overview-ring" style="--value:${overview.accuracyPercent || 0}">
         <div><strong>${escapeHtml(label)}</strong><span>전체 정확도</span></div>
       </div>
-      <div class="overview-metric"><span>🏫</span><strong>${overview.classCount}</strong><small>학급</small></div>
-      <div class="overview-metric"><span>👥</span><strong>${overview.studentCount}</strong><small>학생</small></div>
-      <div class="overview-metric coral"><span>🎯</span><strong>${overview.weak}</strong><small>약함</small></div>
-      <div class="overview-metric sky"><span>🔔</span><strong>${overview.due}</strong><small>복습</small></div>
+      <div class="overview-metrics">
+        <div class="overview-metric"><span>🏫</span><strong>${overview.classCount}</strong><small>학급</small></div>
+        <button class="overview-metric overview-quiz" type="button" data-overview-group="students" aria-label="전체 학생 명단 보기">
+          <span>👥</span><strong>${overview.studentCount}</strong><small>학생</small>
+        </button>
+        <button class="overview-metric overview-quiz coral" type="button" data-overview-group="weak" aria-label="약한 학생 명단 보기">
+          <span>🎯</span><strong>${overview.weak}</strong><small>약함</small>
+        </button>
+        <button class="overview-metric overview-quiz sky" type="button" data-overview-group="due" aria-label="복습 학생 명단 보기">
+          <span>🔔</span><strong>${overview.due}</strong><small>복습</small>
+        </button>
+        <button class="overview-metric overview-quiz gold" type="button" data-overview-group="mastered" aria-label="잘 맞춘 학생 명단 보기">
+          <span>⭐</span><strong>${overview.mastered || 0}</strong><small>잘 맞춤</small>
+        </button>
+      </div>
     </section>`;
 }
 
@@ -185,6 +197,7 @@ async function loadHome() {
 }
 
 function applyHomeData(res) {
+  state.overviewPack = null;
   state.homeOverview = res.overview || null;
   state.homeModes = res.modes || state.homeModes;
   renderHome(res.classes || []);
@@ -281,6 +294,9 @@ function renderHome(classes) {
       ${classes.map((c, index) => classCard(c, index, editing, selecting)).join("")}
     </div>
   `;
+  root.querySelectorAll("[data-overview-group]").forEach((button) => {
+    button.onclick = () => openOverviewGroup(button.dataset.overviewGroup);
+  });
   if (editing) {
     $("btnAscending").onclick = resetClassOrder;
     $("btnCancelClassOrder").onclick = () => {
@@ -450,6 +466,111 @@ async function startMultiClassQuiz(mode) {
   } finally {
     busy(false);
   }
+}
+
+async function startOverviewQuiz(group, mode) {
+  busy(true);
+  try {
+    const res = await call("start_overview_quiz", group, mode);
+    if (!res.ok) return toast(res.error, true);
+    state.quiz = res.quiz;
+    state.flipped = false;
+    state.locked = false;
+    renderQuiz();
+    showScreen("quiz");
+  } finally {
+    busy(false);
+  }
+}
+
+async function openOverviewGroup(group) {
+  busy(true);
+  try {
+    const res = await call("open_overview_group", group);
+    if (!res.ok) return toast(res.error, true);
+    state.overviewPack = res;
+    renderOverviewGroup();
+    showScreen("home");
+  } finally {
+    busy(false);
+  }
+}
+
+function overviewStudentRow(st) {
+  const streak = st.stats?.streak || 0;
+  const extras = [
+    st.className ? escapeHtml(st.className) : "",
+    `정답률 ${escapeHtml(st.accuracyLabel)}`,
+    streak ? `연속 ${streak}회` : "",
+  ].filter(Boolean);
+  return `
+    <div class="student overview-student">
+      ${avatar(st.photoUrl)}
+      <div class="num">${st.number ?? ""}번</div>
+      <div class="name">${escapeHtml(st.name)}</div>
+      <div class="muted">${extras.join(" · ")}</div>
+    </div>`;
+}
+
+function renderOverviewGroup() {
+  const p = state.overviewPack;
+  if (!p) return;
+  const root = $("screenHome");
+  const students = p.students || [];
+  const canQuiz = !!p.canQuiz;
+  const needChoices = !!p.needChoices;
+  root.innerHTML = `
+    <div class="row-between">
+      <div>
+        <button class="btn btn-ghost btn-sm" type="button" id="btnBackOverview">← 종합 분석</button>
+        <h2 class="h2" style="margin-top:10px">${escapeHtml(p.title)}</h2>
+        <p class="muted">${escapeHtml(p.desc)}</p>
+      </div>
+      <span class="chip${p.group === "mastered" ? " gold" : p.group === "weak" ? " peach" : p.group === "due" ? " sky" : ""}">${students.length}명</span>
+    </div>
+    <div class="overview-group-board">
+      <h3>퀴즈 방식</h3>
+      <p class="muted">${
+        canQuiz
+          ? `사진이 있는 ${p.quizableCount}명으로 게임을 진행할 수 있습니다.`
+          : "이 명단에는 퀴즈를 진행할 사진 있는 학생이 없습니다."
+      }</p>
+      <div class="grid-2">
+        ${(p.modes || [])
+          .map((m) => {
+            const choiceMode = m.id === "photoToName" || m.id === "nameToPhoto";
+            const disabled = !canQuiz || (choiceMode && !needChoices);
+            return `
+          <button class="card mode-card${disabled ? " is-disabled" : ""}" type="button" data-overview-mode="${escapeHtml(m.id)}" ${disabled ? "disabled" : ""}>
+            <span class="mode-icon" aria-hidden="true">${modeIcon(m.id)}</span>
+            <h3>${escapeHtml(m.title)}</h3>
+            <p>${escapeHtml(m.desc)}</p>
+          </button>`;
+          })
+          .join("")}
+      </div>
+    </div>
+    <div class="roster-toolbar">
+      <div>
+        <h3>학생 명단 ${students.length}명</h3>
+        <p>학급 이름과 함께 표시됩니다.</p>
+      </div>
+    </div>
+    <div class="student-list">
+      ${
+        students.length
+          ? students.map(overviewStudentRow).join("")
+          : `<div class="empty overview-empty"><h3>해당하는 학생이 없어요</h3><p>퀴즈를 풀면 여기에 학생들이 모입니다.</p></div>`
+      }
+    </div>
+  `;
+  $("btnBackOverview").onclick = () => {
+    state.overviewPack = null;
+    renderHome(state.homeClasses);
+  };
+  root.querySelectorAll("[data-overview-mode]").forEach((btn) => {
+    btn.onclick = () => startOverviewQuiz(p.group, btn.dataset.overviewMode);
+  });
 }
 
 async function openClass(id) {
@@ -810,6 +931,9 @@ async function startQuiz(mode) {
 }
 
 function restartQuiz(quiz) {
+  if (quiz.overviewGroup) {
+    return startOverviewQuiz(quiz.overviewGroup, quiz.mode);
+  }
   if (quiz.returnTo === "home" && quiz.classIds?.length) {
     state.selectedClassIds = new Set(quiz.classIds);
     return startMultiClassQuiz(quiz.mode);
@@ -829,7 +953,9 @@ function renderQuiz() {
         <div class="done-score">${q.correct} / ${q.answered}</div>
         <div style="display:flex;gap:10px;margin-top:18px">
           <button class="btn btn-sky" type="button" id="btnAgain">같은 모드 다시</button>
-          <button class="btn btn-accent" type="button" id="btnToClass">${q.returnTo === "home" ? "학급 목록으로" : "학급으로"}</button>
+          <button class="btn btn-accent" type="button" id="btnToClass">${
+            q.returnTo === "overview" ? "명단으로" : q.returnTo === "home" ? "학급 목록으로" : "학급으로"
+          }</button>
         </div>
       </div>
     `;
@@ -1015,6 +1141,10 @@ async function practice(easy) {
 }
 
 async function backToClass() {
+  if (state.quiz?.overviewGroup) {
+    await openOverviewGroup(state.quiz.overviewGroup);
+    return;
+  }
   if (state.quiz?.returnTo === "home") {
     await loadHome();
     return;
@@ -1060,9 +1190,83 @@ function setupDrop() {
 
 function bindChrome() {
   $("btnImport").onclick = importModal;
+  $("btnExportData").onclick = exportData;
+  $("btnImportData").onclick = importDataModal;
   $("modalRoot").addEventListener("click", (e) => {
     if (e.target.dataset.close) closeModal();
   });
+}
+
+async function exportData() {
+  busy(true);
+  try {
+    const res = await call("export_data");
+    if (res.cancelled) return;
+    if (!res.ok) return toast(res.error, true);
+    toast(`데이터를 내보냈어요. (${res.classCount || 0}개 학급)`);
+  } finally {
+    busy(false);
+  }
+}
+
+function importDataModal() {
+  openModal(`
+    <h3>데이터 불러오기</h3>
+    <p>다른 컴퓨터에서 내보낸 zip 백업 파일을 선택하세요.</p>
+    <div class="backup-options">
+      <button class="card mode-card" type="button" data-backup-mode="replace">
+        <span class="mode-icon" aria-hidden="true">♻️</span>
+        <h3>덮어쓰기</h3>
+        <p>이 컴퓨터의 기존 학급·기록을 지우고 백업으로 바꿉니다.</p>
+      </button>
+      <button class="card mode-card" type="button" data-backup-mode="merge">
+        <span class="mode-icon" aria-hidden="true">➕</span>
+        <h3>합치기</h3>
+        <p>기존 데이터를 유지한 채 백업 학급을 추가합니다. 같은 학급은 백업으로 갱신됩니다.</p>
+      </button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sky btn-sm" type="button" data-act="no">취소</button>
+    </div>
+  `);
+  $("modalBox").onclick = async (e) => {
+    if (e.target.closest("[data-act=no]")) return closeModal();
+    const mode = e.target.closest("[data-backup-mode]")?.dataset.backupMode;
+    if (!mode) return;
+    closeModal();
+    if (mode === "replace") {
+      const yes = await confirmModal({
+        title: "데이터 덮어쓰기",
+        message: "이 컴퓨터에 저장된 학급과 학습 기록이 모두 삭제되고 백업 내용으로 바뀝니다. 계속할까요?",
+        okText: "덮어쓰기",
+        danger: true,
+      });
+      if (!yes) return;
+    }
+    await importData(mode);
+  };
+}
+
+async function importData(mode) {
+  busy(true);
+  try {
+    const res = await call("import_data", mode);
+    if (res.cancelled) return;
+    if (!res.ok) return toast(res.error, true);
+    state.classOrderEditing = false;
+    state.classQuizSelecting = false;
+    state.selectedClassIds.clear();
+    state.overviewPack = null;
+    applyHomeData(res);
+    showScreen("home");
+    toast(
+      mode === "replace"
+        ? `백업을 불러왔어요. (${res.importedClassCount || 0}개 학급)`
+        : `백업을 합쳤어요. (현재 ${res.importedClassCount || 0}개 학급)`
+    );
+  } finally {
+    busy(false);
+  }
 }
 
 async function boot() {
