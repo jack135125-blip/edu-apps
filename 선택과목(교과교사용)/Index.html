@@ -12,34 +12,140 @@
     .styled-table td { padding: 10px 12px; border: 1px solid #99f6e4; font-size: 13px; line-height: 1.5; vertical-align: middle; }
 
     .stats-wrap { overflow-x: auto; }
+    .stats-panels {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+    .stats-panel {
+      background: #fff;
+      border: 1px solid #99f6e4;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(13, 148, 136, 0.06);
+    }
+    .stats-panel-title {
+      margin: 0;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #0f766e;
+      background: linear-gradient(180deg, #f0fdfa 0%, #e6fffa 100%);
+      border-bottom: 1px solid #99f6e4;
+      text-align: center;
+    }
     .stats-table {
       table-layout: fixed;
       width: 100%;
-      min-width: 720px;
-      border-collapse: collapse;
-      border: 1px solid #5eead4;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: none;
     }
     .stats-table td {
-      padding: 7px 8px;
-      border: 1px solid #99f6e4;
+      height: 40px;
+      padding: 6px 10px;
+      border: none;
+      border-bottom: 1px solid #e2e8f0;
+      border-right: 1px solid #f1f5f9;
       font-size: 12.5px;
-      line-height: 1.35;
+      line-height: 1.3;
       vertical-align: middle;
       word-break: keep-all;
-      overflow-wrap: anywhere;
+      overflow: hidden;
     }
+    .stats-table tr:last-child td { border-bottom: none; }
+    .stats-table td:last-child { border-right: none; }
     .stats-table td.is-num {
       text-align: center !important;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
-      overflow-wrap: normal;
+      width: 72px;
+      color: #0f766e;
+    }
+    .stats-table td.is-num .num-pill {
+      display: inline-block;
+      min-width: 2rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.08);
+      font-size: 12.5px;
     }
     .stats-table td.is-label {
       text-align: center !important;
       font-weight: 700;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      padding-left: 4px;
+      padding-right: 4px;
     }
-    .stats-table td.is-empty { color: transparent; }
+    .stats-table td.is-header {
+      background: #f8fafc !important;
+      font-weight: 700;
+      color: #334155 !important;
+      border-bottom: 1px solid #cbd5e1;
+    }
+    .stats-table td.is-empty {
+      color: transparent;
+      background: transparent !important;
+      border-right-color: transparent;
+    }
+    .stats-table .cell-text {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      word-break: keep-all;
+    }
+    .stats-table .subj-link {
+      border-bottom: 1px dashed rgba(13, 148, 136, 0.45);
+      text-underline-offset: 2px;
+    }
+    .stats-table tr.is-cancelled td {
+      background-image: linear-gradient(90deg, rgba(255, 228, 230, 0.55), rgba(255, 228, 230, 0.2));
+    }
+    .stats-table tr.is-cancelled td.is-num .num-pill {
+      background: #ffe4e6;
+      color: #be123c;
+    }
+    .stats-table td.is-cancelled-num {
+      white-space: normal;
+    }
+    .stats-table .cancel-tag {
+      display: block;
+      width: fit-content;
+      margin: 2px auto 0;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.3;
+      color: #be123c;
+      background: #fecdd3;
+    }
+    .cancel-legend {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      padding: 5px 10px;
+      border-radius: 8px;
+      border: 1px solid #fecdd3;
+      background: #fff1f2;
+      color: #9f1239;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .cancel-legend .swatch {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      background: #fecdd3;
+      border: 1px solid #fb7185;
+    }
 
     .scroll-container { max-height: 62vh; overflow: auto; border: 1px solid #99f6e4; border-radius: 12px; background: white; }
     .sticky-header thead th { position: sticky; top: -1px; z-index: 10; background-color: #f0fdfa; box-shadow: inset 0 -1px 0 #5eead4; }
@@ -59,18 +165,129 @@
     .roster-col { flex: 0 0 260px; min-width: 240px; }
 
     @media print {
-      @page { size: A4 landscape; margin: 10mm 5mm; }
-      body { background-color: #fff; padding: 0; zoom: 0.88; }
+      @page { size: A4 portrait; margin: 8mm 7mm; }
+      body { background-color: #fff; padding: 0; }
       .no-print { display: none !important; }
       .scroll-container { max-height: none !important; overflow: visible !important; border: none !important; }
       .sticky-header thead th { position: static !important; background-color: #f8fafc !important; }
-      main, #resultContainer, .subject-card { border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
+      main { max-width: none !important; padding: 0 !important; margin: 0 !important; }
+      #resultContainer, .subject-card {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+      }
       .roster-row { display: flex; flex-wrap: nowrap; gap: 8px; }
       .roster-col { flex: 1 1 0; min-width: 0; break-inside: avoid; }
-      table { width: 100%; font-size: 10px !important; border-collapse: collapse !important; }
-      th, td, .styled-table td, .stats-table td { padding: 4px 3px !important; border: 1px solid #94a3b8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .stats-table { min-width: 0 !important; }
+      table { width: 100%; border-collapse: collapse !important; }
+      th, td, .styled-table td { padding: 4px 3px !important; border: 1px solid #94a3b8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .status-badge { border: 1px solid #0d9488 !important; color: #0d9488 !important; }
+    }
+
+    /* 통계 인쇄 레이아웃 (화면 측정 + 실제 인쇄 공용) */
+    body.printing-stats #resultContainer {
+      transform-origin: top center;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    body.printing-stats #headerInfoArea {
+      margin: 0 0 8px !important;
+      padding: 0 !important;
+      page-break-after: avoid;
+      break-after: avoid;
+      text-align: center;
+    }
+    body.printing-stats #headerInfoArea h2 {
+      font-size: 18pt !important;
+      line-height: 1.3 !important;
+      margin: 0 0 4px !important;
+      color: #115e59 !important;
+      letter-spacing: -0.02em;
+    }
+    body.printing-stats #headerInfoArea p {
+      font-size: 10pt !important;
+      margin: 2px 0 !important;
+      line-height: 1.35 !important;
+    }
+    body.printing-stats .cancel-legend {
+      display: inline-flex !important;
+      margin-top: 6px !important;
+      padding: 3px 10px !important;
+      font-size: 9pt !important;
+    }
+    body.printing-stats .stats-wrap { overflow: visible !important; }
+    body.printing-stats .stats-panels {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 8px !important;
+      align-items: stretch !important;
+      page-break-before: avoid;
+      break-before: avoid;
+    }
+    body.printing-stats .stats-panel {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      box-shadow: none !important;
+      border: 1px solid #64748b !important;
+      border-radius: 0 !important;
+      display: flex;
+      flex-direction: column;
+    }
+    body.printing-stats .stats-panel-title {
+      padding: 6px 8px !important;
+      font-size: 12pt !important;
+      background: #e6fffa !important;
+      color: #0f766e !important;
+    }
+    body.printing-stats .stats-table {
+      width: 100% !important;
+      table-layout: fixed !important;
+      flex: 1;
+    }
+    body.printing-stats .stats-table td {
+      height: auto !important;
+      min-height: 0 !important;
+      padding: 3px 5px !important;
+      font-size: 11pt !important;
+      line-height: 1.25 !important;
+      border: 1px solid #64748b !important;
+      text-align: center !important;
+      vertical-align: middle !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    body.printing-stats .stats-table td.is-header {
+      font-size: 11pt !important;
+      font-weight: 700 !important;
+      background: #f1f5f9 !important;
+      padding: 4px 5px !important;
+    }
+    body.printing-stats .stats-table .cell-text {
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      font-size: 11pt !important;
+    }
+    body.printing-stats .stats-table .num-pill {
+      padding: 1px 6px !important;
+      font-size: 11pt !important;
+      min-width: 1.6rem !important;
+      background: transparent !important;
+      font-weight: 700 !important;
+    }
+    body.printing-stats .stats-table .cancel-tag {
+      display: inline !important;
+      margin: 0 0 0 3px !important;
+      padding: 0 4px !important;
+      font-size: 9pt !important;
+      background: #fecdd3 !important;
+    }
+    body.printing-stats .stats-table tr.is-cancelled td {
+      background-image: none !important;
+      background-color: #fff1f2 !important;
+    }
+    body.printing-stats .stats-table td.is-label {
+      font-size: 11pt !important;
     }
   </style>
 </head>
@@ -86,7 +303,7 @@
         <button onclick="downloadExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-1.5">
           📊 엑셀 다운로드
         </button>
-        <button onclick="window.print()" class="bg-[#5eead4] hover:bg-[#2dd4bf] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-1.5">
+        <button onclick="printPage()" class="bg-[#5eead4] hover:bg-[#2dd4bf] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-1.5">
           🖨️ 인쇄 / PDF 저장
         </button>
       </div>
@@ -112,7 +329,7 @@
         </div>
 
         <div class="w-full md:flex-1 relative">
-          <label class="block text-xs font-bold text-teal-600 uppercase tracking-wider mb-2">③ 교과목 선택 (여러 과목 가능)</label>
+          <label class="block text-xs font-bold text-teal-600 uppercase tracking-wider mb-2">③ 교과목별 명단(여러 과목 선택 가능)</label>
           <button type="button" id="subjectSelectBtn" onclick="toggleSubjectDropdown()" disabled
                   class="w-full p-2.5 border-2 border-teal-100 rounded-xl outline-none bg-white text-left text-sm font-medium disabled:bg-slate-50 disabled:text-slate-400">
             <span id="subjectSelectLabel">학년을 먼저 선택하세요</span>
@@ -254,6 +471,31 @@
       return `💡 표 안의 [과목명]을 클릭하시면 해당 과목 명단으로 이동합니다.`;
     }
 
+    function getCancelThreshold() {
+      if (activeGrade === '1학년') return 14;
+      if (activeGrade === '2학년') return 12;
+      return null;
+    }
+
+    function getCancelLegendHtml() {
+      const th = getCancelThreshold();
+      if (th == null) return '';
+      return `<div class="cancel-legend"><span class="swatch"></span>폐강 기준: 선택인원 <strong>${th}명 미만</strong> (${activeGrade})</div>`;
+    }
+
+    function getStatsHeaderHtml(refTimeValue) {
+      return `
+        <div class="text-center mb-6">
+          <h2 class="text-xl md:text-2xl font-bold text-teal-800 tracking-tight">2027학년도 과목선택 인원 통계(${activeGrade})_2차</h2>
+          <p class="text-xs md:text-sm text-teal-500 mt-1.5 font-medium">자료 기준 시간: ${refTimeValue}</p>
+          ${getScienceTrackBadgeHtml()}
+          ${getCancelLegendHtml()}
+          <p class="text-[10px] font-bold text-orange-600 bg-orange-50 inline-block px-3 py-1 rounded mt-2 border border-orange-100 no-print">
+            ${getStatsHintHtml()}
+          </p>
+        </div>`;
+    }
+
     function loadGradeData(grade, btn) {
       activeGrade = grade;
       cachedStatsHtml = "";
@@ -333,15 +575,7 @@
       clearSubjectSelection();
       closeSubjectDropdown();
       const refTimeValue = document.getElementById('refTime').innerText;
-      document.getElementById('headerInfoArea').innerHTML = `
-        <div class="text-center mb-6">
-          <h2 class="text-xl md:text-2xl font-bold text-teal-800 tracking-tight">2027학년도 과목선택 인원 통계(${activeGrade})_2차</h2>
-          <p class="text-xs md:text-sm text-teal-500 mt-1.5 font-medium">자료 기준 시간: ${refTimeValue}</p>
-          ${getScienceTrackBadgeHtml()}
-          <p class="text-[10px] font-bold text-orange-600 bg-orange-50 inline-block px-3 py-1 rounded mt-2 border border-orange-100 no-print">
-            ${getStatsHintHtml()}
-          </p>
-        </div>`;
+      document.getElementById('headerInfoArea').innerHTML = getStatsHeaderHtml(refTimeValue);
       document.getElementById('tableArea').innerHTML = cachedStatsHtml;
       document.getElementById('tableScrollArea').classList.remove('hidden');
       document.getElementById('placeholder').classList.add('hidden');
@@ -375,7 +609,7 @@
         <div class="text-center mb-6">
           <h2 class="text-xl md:text-2xl font-bold text-teal-800 tracking-tight">2027학년도 [과학중점과정 이수 예정] 명단</h2>
           <p class="text-xs md:text-sm text-teal-500 mt-1.5 font-medium">자료 기준 시간: ${refTimeValue}</p>
-          <p class="text-[10px] text-indigo-600 mt-1">기준: 1학년안내 시트 · 과학과목 선택 수(F열) = 4</p>
+          <p class="text-[10px] text-indigo-600 mt-1">기준: 과학일반선택(물화생지), 과학과제연구 중 4과목 선택</p>
           <div class="status-badge mt-2 text-xs md:text-sm font-bold text-indigo-700 bg-indigo-50 inline-block px-4 py-1.5 rounded-full border border-indigo-200 shadow-sm">
             👥 이수 예정 인원: <span class="text-base font-black">${count}</span>명
           </div>
@@ -500,7 +734,7 @@
 
     function normalizeStatsBg(bg) {
       const v = String(bg || '').replace(/\s/g, '').toLowerCase();
-      if (!v || v === '#ffffff' || v === '#fff' || v === 'white' || v === 'transparent') return '#ffffff';
+      if (!v || v === '#ffffff' || v === '#fff' || v === 'white' || v === 'transparent') return '';
       return bg;
     }
 
@@ -508,6 +742,196 @@
       const v = String(co || '').replace(/\s/g, '').toLowerCase();
       if (!v || v === '#000000' || v === '#000' || v === 'black') return '#134e4a';
       return co;
+    }
+
+    function isStatsCellMeaningful(cell) {
+      if (!cell || cell.isChild) return false;
+      return String(cell.text || '').trim() !== '';
+    }
+
+    function getStatsColumnBlocks(grid, lastR, lastC) {
+      const used = [];
+      for (let c = 0; c <= lastC; c++) {
+        let hasContent = false;
+        for (let r = 0; r <= lastR; r++) {
+          const cell = grid[r][c];
+          if (!isStatsCellMeaningful(cell)) continue;
+          hasContent = true;
+          break;
+        }
+        used[c] = hasContent;
+      }
+      const blocks = [];
+      let start = null;
+      for (let c = 0; c <= lastC; c++) {
+        if (used[c]) {
+          if (start === null) start = c;
+        } else if (start !== null) {
+          blocks.push({ startC: start, endC: c - 1 });
+          start = null;
+        }
+      }
+      if (start !== null) blocks.push({ startC: start, endC: lastC });
+      return blocks.length ? blocks : [{ startC: 0, endC: lastC }];
+    }
+
+    function guessStatsPanelTitle(grid, block, lastR) {
+      for (let r = 0; r <= Math.min(2, lastR); r++) {
+        for (let c = block.startC; c <= block.endC; c++) {
+          const cell = grid[r][c];
+          if (!isStatsCellMeaningful(cell)) continue;
+          const t = String(cell.text || '').trim();
+          if (/학기/.test(t) || /학년/.test(t)) return t;
+        }
+      }
+      return '';
+    }
+
+    function buildStatsPanelHtml(grid, block, lastR, validSubjectNames, renderOccurrences, panelTitle) {
+      const colCount = block.endC - block.startC + 1;
+      const widths = [];
+      if (colCount === 1) {
+        widths.push(100);
+      } else if (colCount === 2) {
+        widths.push(78, 22);
+      } else if (colCount === 3) {
+        // 과목 | 택4 등 조건 | 인원
+        widths.push(62, 10, 28);
+      } else if (colCount === 4) {
+        // 과목 | 택4 | 과중 등 세부조건 | 인원
+        widths.push(50, 8, 26, 16);
+      } else {
+        const first = 40;
+        const cond = 8;
+        const last = 16;
+        const midCount = colCount - 3;
+        const mid = midCount > 0 ? ((100 - first - cond - last) / midCount) : 0;
+        widths.push(first, cond);
+        for (let i = 0; i < midCount; i++) widths.push(Number(mid.toFixed(2)));
+        widths.push(last);
+      }
+
+      const isSemesterTitleRow = (r) => {
+        let texts = [];
+        for (let c = block.startC; c <= block.endC; c++) {
+          const cell = grid[r][c];
+          if (!cell || cell.isChild) continue;
+          const t = String(cell.text || '').trim();
+          if (t) texts.push(t);
+        }
+        if (texts.length === 0) return false;
+        if (panelTitle && texts.every(t => t === panelTitle || /학기/.test(t))) return true;
+        return texts.length === 1 && /학기/.test(texts[0]);
+      };
+
+      const keptRows = [];
+      for (let r = 0; r <= lastR; r++) {
+        if (isSemesterTitleRow(r)) continue;
+        let meaningful = false;
+        for (let c = block.startC; c <= block.endC; c++) {
+          if (isStatsCellMeaningful(grid[r][c])) {
+            meaningful = true;
+            break;
+          }
+        }
+        if (meaningful) keptRows.push(r);
+      }
+      const keptSet = new Set(keptRows);
+
+      const effectiveRowspan = (r, rawSpan) => {
+        let n = 0;
+        for (let i = 0; i < rawSpan; i++) {
+          if (keptSet.has(r + i)) n++;
+        }
+        return Math.max(1, n);
+      };
+
+      const cancelThreshold = getCancelThreshold();
+
+      let html = `<table class="stats-table"><colgroup>`;
+      for (let i = 0; i < colCount; i++) {
+        html += `<col style="width:${widths[i]}%">`;
+      }
+      html += `</colgroup><tbody>`;
+
+      let firstDataRow = true;
+      keptRows.forEach((r) => {
+        let rowCancelled = false;
+        let cellsHtml = '';
+
+        for (let c = block.startC; c <= block.endC; c++) {
+          const cell = grid[r][c];
+          if (!cell || cell.isChild) continue;
+
+          const maxRowspan = lastR - r + 1;
+          const maxColspan = block.endC - c + 1;
+          const rawRowspan = Math.min(cell.rowspan || 1, maxRowspan);
+          const rowspan = effectiveRowspan(r, rawRowspan);
+          let colspan = Math.min(cell.colspan || 1, maxColspan);
+          if (c + colspan - 1 > block.endC) colspan = block.endC - c + 1;
+
+          const cellText = String(cell.text || '').trim();
+          const isNum = /^\d+(\.\d+)?$/.test(cellText);
+          const numVal = isNum ? Number(cellText) : NaN;
+          const isCancelledNum = isNum && cancelThreshold != null && numVal < cancelThreshold;
+          if (isCancelledNum) rowCancelled = true;
+
+          const isHeader = firstDataRow && cellText !== '' && !isNum;
+          const isLabel = !isNum && !isHeader && (rawRowspan > 1 || cell.fw === 'bold');
+          const isEmpty = cellText === '';
+          const classes = [
+            isNum ? 'is-num' : '',
+            isCancelledNum ? 'is-cancelled-num' : '',
+            isLabel ? 'is-label' : '',
+            isHeader ? 'is-header' : '',
+            isEmpty ? 'is-empty' : ''
+          ].filter(Boolean).join(' ');
+
+          let align = cell.align;
+          if (align === 'general-left') align = 'left';
+          else if (align === 'general-right' || align === 'general' || !align) align = 'center';
+          // 통계표는 과목명·조건·인원 모두 가운데 정렬
+          if (!isEmpty) align = 'center';
+
+          const bg = normalizeStatsBg(cell.bg);
+          const color = normalizeStatsColor(cell.co);
+          const styleParts = [
+            bg ? `background-color:${bg}` : '',
+            `color:${color}`,
+            `text-align:${align}`
+          ].filter(Boolean);
+          const style = styleParts.join(';');
+
+          let inner = '';
+          if (isNum) {
+            inner = `<span class="num-pill">${escapeHtml(cellText)}</span>`;
+            if (isCancelledNum) inner += `<span class="cancel-tag">폐강</span>`;
+          } else if (isEmpty) {
+            inner = '';
+          } else {
+            inner = `<span class="cell-text" title="${escapeHtml(cellText)}">${escapeHtml(cellText)}</span>`;
+          }
+
+          if (validSubjectNames.includes(cellText)) {
+            renderOccurrences[cellText] = (renderOccurrences[cellText] || 0) + 1;
+            const targetSubj = cachedSubjectData.subjects.find(
+              s => s.name === cellText && s.occurrence === renderOccurrences[cellText]
+            );
+            if (targetSubj) {
+              cellsHtml += `<td style="${style}" class="clickable-subject ${classes}" onclick="jumpToSubject('${targetSubj.index}')" rowspan="${rowspan}" colspan="${colspan}"><span class="cell-text subj-link" title="${escapeHtml(cellText)}">${escapeHtml(cellText)}</span></td>`;
+              continue;
+            }
+          }
+
+          cellsHtml += `<td style="${style}" class="${classes}" rowspan="${rowspan}" colspan="${colspan}">${inner}</td>`;
+        }
+
+        html += `<tr class="${rowCancelled ? 'is-cancelled' : ''}">${cellsHtml}</tr>`;
+        firstDataRow = false;
+      });
+
+      html += `</tbody></table>`;
+      return html;
     }
 
     function renderStatsTable() {
@@ -530,74 +954,184 @@
           document.getElementById('placeholder').classList.remove('hidden');
           return;
         }
-        document.getElementById('headerInfoArea').innerHTML = `
-          <div class="text-center mb-6">
-            <h2 class="text-xl md:text-2xl font-bold text-teal-800 tracking-tight">2027학년도 과목선택 인원 통계(${activeGrade})_2차</h2>
-            <p class="text-xs md:text-sm text-teal-500 mt-1.5 font-medium">자료 기준 시간: ${refTimeValue}</p>
-            ${getScienceTrackBadgeHtml()}
-            <p class="text-[10px] font-bold text-orange-600 bg-orange-50 inline-block px-3 py-1 rounded mt-2 border border-orange-100 no-print">
-              ${getStatsHintHtml()}
-            </p>
-          </div>`;
+        document.getElementById('headerInfoArea').innerHTML = getStatsHeaderHtml(refTimeValue);
         document.getElementById('tableScrollArea').classList.remove('hidden');
 
         const validSubjectNames = [...new Set(cachedSubjectData.subjects.map(s => s.name))];
         let renderOccurrences = {};
         const bounds = getStatsUsedBounds(grid);
-        const colCount = bounds.lastC + 1;
-        const firstColW = Math.max(12, Math.round(140 / Math.max(colCount, 1)));
-        const otherColW = ((100 - firstColW) / Math.max(colCount - 1, 1)).toFixed(2);
+        const blocks = getStatsColumnBlocks(grid, bounds.lastR, bounds.lastC);
 
-        let html = `<div class="subject-card"><div class="stats-wrap"><table class="stats-table"><colgroup>`;
-        for (let i = 0; i < colCount; i++) {
-          html += `<col style="width:${i === 0 ? firstColW : otherColW}%">`;
-        }
-        html += `</colgroup><tbody>`;
+        let html = `<div class="subject-card"><div class="stats-wrap"><div class="stats-panels">`;
+        blocks.forEach((block, idx) => {
+          let title = guessStatsPanelTitle(grid, block, bounds.lastR);
+          if (!title && blocks.length > 1) title = idx === 0 ? '1학기' : '2학기';
+          html += `<div class="stats-panel">`;
+          if (title) html += `<h3 class="stats-panel-title">${escapeHtml(title)}</h3>`;
+          html += buildStatsPanelHtml(grid, block, bounds.lastR, validSubjectNames, renderOccurrences, title);
+          html += `</div>`;
+        });
+        html += `</div></div></div>`;
 
-        for (let r = 0; r <= bounds.lastR; r++) {
-          html += `<tr>`;
-          for (let c = 0; c <= bounds.lastC; c++) {
-            let cell = grid[r][c];
-            if (!cell || cell.isChild) continue;
-            const rowspan = Math.min(cell.rowspan || 1, bounds.lastR - r + 1);
-            const colspan = Math.min(cell.colspan || 1, bounds.lastC - c + 1);
-            const cellText = String(cell.text || '').trim();
-            const isNum = /^\d+(\.\d+)?$/.test(cellText);
-            const isLabel = !isNum && (rowspan > 1 || r === 0 || cell.fw === 'bold');
-            const classes = [
-              isNum ? 'is-num' : '',
-              isLabel ? 'is-label' : '',
-              cellText === '' ? 'is-empty' : ''
-            ].filter(Boolean).join(' ');
-
-            let align = cell.align;
-            if (align === 'general-left') align = 'left';
-            else if (align === 'general-right' || align === 'general' || !align) align = 'center';
-            if (isNum || isLabel) align = 'center';
-
-            const bg = normalizeStatsBg(cell.bg);
-            const color = normalizeStatsColor(cell.co);
-            const style = `background-color:${bg};color:${color};text-align:${align};`;
-
-            if (validSubjectNames.includes(cellText)) {
-              renderOccurrences[cellText] = (renderOccurrences[cellText] || 0) + 1;
-              const targetSubj = cachedSubjectData.subjects.find(s => s.name === cellText && s.occurrence === renderOccurrences[cellText]);
-              if (targetSubj) {
-                html += `<td style="${style}" class="clickable-subject ${classes}" onclick="jumpToSubject('${targetSubj.index}')" rowspan="${rowspan}" colspan="${colspan}"><span class="border-b border-dashed border-teal-500">${escapeHtml(cellText)}</span></td>`;
-                continue;
-              }
-            }
-            html += `<td style="${style}" class="${classes}" rowspan="${rowspan}" colspan="${colspan}">${escapeHtml(cellText)}</td>`;
-          }
-          html += `</tr>`;
-        }
-        html += `</tbody></table></div></div>`;
         cachedStatsHtml = html;
         document.getElementById('tableArea').innerHTML = html;
       }).getFormattedSubjectStats(activeGrade);
     }
 
+    function printPage() {
+      const isStats = !!document.querySelector('#tableArea .stats-panels');
+      const root = document.getElementById('resultContainer');
+
+      const clearPrintFit = () => {
+        document.body.classList.remove('printing-stats');
+        if (root) {
+          root.style.zoom = '';
+          root.style.transform = '';
+          root.style.width = '';
+          root.style.marginLeft = '';
+        }
+        window.removeEventListener('afterprint', clearPrintFit);
+      };
+      window.addEventListener('afterprint', clearPrintFit);
+
+      if (!isStats || !root) {
+        document.body.classList.remove('printing-stats');
+        window.print();
+        return;
+      }
+
+      document.body.classList.add('printing-stats');
+      root.style.zoom = '1';
+      root.style.transform = '';
+      root.style.width = '';
+      root.style.marginLeft = '';
+
+      requestAnimationFrame(() => {
+        // A4 세로 출력 가능 영역(여백 제외) 대략값
+        const pageW = 720;
+        const pageH = 1020;
+        const w = Math.max(root.scrollWidth, root.offsetWidth, 1);
+        const h = Math.max(root.scrollHeight, root.offsetHeight, 1);
+        let scale = Math.min(pageW / w, pageH / h, 1);
+        // 11pt 가독성 유지: 과도한 축소 방지, 넘치면 최소 0.82까지
+        scale = Math.max(0.82, Math.min(1, scale));
+        root.style.zoom = String(scale);
+        window.print();
+      });
+    }
+
+    function rgbToHexColor(input) {
+      if (!input) return '';
+      const s = String(input).trim();
+      if (s.startsWith('#') && (s.length === 7 || s.length === 4)) return s.toUpperCase();
+      const m = s.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+      if (!m) return '';
+      const hex = (n) => Number(n).toString(16).padStart(2, '0');
+      return ('#' + hex(m[1]) + hex(m[2]) + hex(m[3])).toUpperCase();
+    }
+
+    function downloadStatsExcel() {
+      const titleEl = document.querySelector('#headerInfoArea h2');
+      const title = titleEl ? titleEl.innerText.trim() : '과목선택_인원통계';
+      const refTime = document.getElementById('refTime')?.innerText || '';
+      const legend = document.querySelector('.cancel-legend')?.innerText?.replace(/\s+/g, ' ').trim() || '';
+      const panels = document.querySelectorAll('#tableArea .stats-panel');
+      if (!panels.length) {
+        alert('통계 표를 찾을 수 없습니다.');
+        return;
+      }
+
+      let panelsHtml = '<table style="border-collapse:collapse;"><tr>';
+      panels.forEach((panel, idx) => {
+        if (idx > 0) panelsHtml += '<td style="width:12px;border:none;"></td>';
+        const pTitle = panel.querySelector('.stats-panel-title')?.innerText?.trim() || '';
+        const srcTable = panel.querySelector('table');
+        if (!srcTable) return;
+
+        const table = srcTable.cloneNode(true);
+        table.setAttribute('border', '1');
+        table.setAttribute('cellspacing', '0');
+        table.setAttribute('cellpadding', '4');
+        table.style.borderCollapse = 'collapse';
+        table.style.fontFamily = "'Malgun Gothic','맑은 고딕',sans-serif";
+        table.style.fontSize = '11pt';
+
+        table.querySelectorAll('td').forEach((td) => {
+          td.removeAttribute('onclick');
+          td.classList.remove('clickable-subject');
+
+          const text = (td.innerText || '').replace(/\s+/g, ' ').trim();
+          const rowspan = td.getAttribute('rowspan');
+          const colspan = td.getAttribute('colspan');
+          const align = td.style.textAlign || (
+            td.classList.contains('is-num') || td.classList.contains('is-label') || td.classList.contains('is-header')
+              ? 'center' : 'left'
+          );
+          let bg = rgbToHexColor(td.style.backgroundColor);
+          const color = rgbToHexColor(td.style.color) || '#134E4A';
+
+          if (!bg && td.classList.contains('is-header')) bg = '#F8FAFC';
+          if (!bg && td.closest('tr')?.classList.contains('is-cancelled')) bg = '#FFF1F2';
+          if (td.classList.contains('is-cancelled-num')) bg = '#FFE4E6';
+
+          td.innerHTML = escapeHtml(text);
+          td.style.cssText = `border:1px solid #64748B;vertical-align:middle;text-align:${align};color:${color};${bg ? 'background-color:' + bg + ';' : ''}`;
+          if (bg) td.setAttribute('bgcolor', bg);
+          if (rowspan) td.setAttribute('rowspan', rowspan);
+          if (colspan) td.setAttribute('colspan', colspan);
+        });
+
+        panelsHtml += '<td valign="top" style="border:none;padding:0;">';
+        if (pTitle) {
+          panelsHtml += `<div style="font-weight:700;text-align:center;background:#E6FFFA;border:1px solid #64748B;border-bottom:none;padding:6px;color:#0F766E;">${escapeHtml(pTitle)}</div>`;
+        }
+        panelsHtml += table.outerHTML + '</td>';
+      });
+      panelsHtml += '</tr></table>';
+
+      const html = `\uFEFF<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="UTF-8">
+<!--[if gte mso 9]>
+<xml>
+  <x:ExcelWorkbook>
+    <x:ExcelWorksheets>
+      <x:ExcelWorksheet>
+        <x:Name>과목인원통계</x:Name>
+        <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+      </x:ExcelWorksheet>
+    </x:ExcelWorksheets>
+  </x:ExcelWorkbook>
+</xml>
+<![endif]-->
+<style>
+  body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; }
+</style>
+</head>
+<body>
+  <h2 style="color:#115E59;margin:0 0 4px;">${escapeHtml(title)}</h2>
+  <p style="margin:0 0 2px;color:#0F766E;">자료 기준 시간: ${escapeHtml(refTime)}</p>
+  ${legend ? `<p style="margin:0 0 10px;color:#9F1239;">${escapeHtml(legend)}</p>` : '<br/>'}
+  ${panelsHtml}
+</body>
+</html>`;
+
+      const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', title.replace(/[\s\\/:*?"<>|]+/g, '_') + '.xls');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    }
+
     function downloadExcel() {
+      if (document.querySelector('#tableArea .stats-panels')) {
+        downloadStatsExcel();
+        return;
+      }
+
       const tables = document.querySelectorAll("#tableArea table");
       if (!tables.length) {
         alert("현재 화면에 출력된 표 데이터가 없어 엑셀로 내보낼 수 없습니다.");
