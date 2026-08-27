@@ -18,7 +18,7 @@ function updateTodaysNotice() {
   const year = today.getFullYear();
   const semester1Start = new Date(year, 2, 2);  // 1학기 1주 시작: 3월 2일
   semester1Start.setHours(0, 0, 0, 0);
-  const semester2Start = new Date(year, 7, 3);  // 2학기 1주 시작: 8월 3일
+  const semester2Start = new Date(year, 7, 10);  // 2학기 1주 시작: 8월 3일
   semester2Start.setHours(0, 0, 0, 0);
 
   let baseDate;
