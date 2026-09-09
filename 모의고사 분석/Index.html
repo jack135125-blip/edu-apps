@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>모의고사 성적 통합 대시보드</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <style>
+    .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .tab-active { background-color: #3b82f6; color: white; border-color: #3b82f6; }
+    .tab-inactive { background-color: white; color: #4b5563; border-color: #d1d5db; }
+    
+    /* 커스텀 다중 선택 드롭다운 스타일 */
+    .dropdown-check-list {
+      display: inline-block;
+      width: 100%;
+    }
+    .dropdown-check-list .anchor {
+      position: relative;
+      cursor: pointer;
+      display: inline-block;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      background-color: #f8fafc;
+      width: 100%;
+      text-align: left;
+    }
+    .dropdown-check-list .anchor:after {
+      position: absolute;
+      content: "";
+      border-left: 2px solid black;
+      border-top: 2px solid black;
+      padding: 3px;
+      right: 12px;
+      top: 35%;
+      transform: rotate(-135deg);
+    }
+    .dropdown-check-list ul.items {
+      padding: 8px;
+      display: none;
+      margin: 4px 0 0 0;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      background-color: white;
+      position: absolute;
+      z-index: 10;
+      width: inherit;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .dropdown-check-list ul.items li {
+      list-style: none;
+      padding: 4px 0;
+    }
+    .dropdown-check-list.visible .items {
+      display: block;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans p-6">
+
+  <div class="max-w-6xl mx-auto">
+    <header class="mb-8 border-b pb-4 flex justify-between items-end">
+      <div>
+        <h1 class="text-3xl font-bold text-slate-900">📈 모의고사 성적 통합 분석</h1>
+        <p class="text-slate-500 mt-2">학년별/월별 추이와 등급 분포를 확인하세요.</p>
+      </div>
+    </header>
+
+    <div id="loadingIndicator" class="flex flex-col items-center justify-center py-20">
+      <div class="loader mb-4"></div>
+      <p class="text-slate-500 font-medium">전체 학년의 시트 데이터를 분석하는 중입니다...</p>
+    </div>
+
+    <div id="dashboard" class="hidden">
+      
+      <div class="flex gap-2 mb-6 flex-wrap">
+        <button id="modeChart" class="px-6 py-2 rounded-lg font-semibold border tab-active transition-colors" onclick="setMode('chart')">모의고사 등급 통계</button>
+        <button id="modeTable" class="px-6 py-2 rounded-lg font-semibold border tab-inactive transition-colors" onclick="setMode('table')">학급 전체 과목 요약표</button>
+        <button id="modeClassTable" class="px-6 py-2 rounded-lg font-semibold border tab-inactive transition-colors" onclick="setMode('classTable')">과목별 학급 요약표</button>
+      </div>
+
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-wrap gap-4 items-end relative">
+        <div class="flex-1 min-w-[150px]">
+          <label class="block text-sm font-semibold text-slate-700 mb-2">학년 선택</label>
+          <select id="gradeSelect" class="w-full border rounded-lg px-4 py-2 bg-slate-50 outline-none" onchange="onGradeChange()"></select>
+        </div>
+        
+        <div id="monthContainer" class="flex-1 min-w-[150px] relative">
+          <label class="block text-sm font-semibold text-slate-700 mb-2">월 선택 (다중)</label>
+          <div id="monthChecklist" class="dropdown-check-list" tabindex="100">
+            <span class="anchor" onclick="toggleMonthDropdown()">월 선택...</span>
+            <ul id="monthItems" class="items">
+              </ul>
+          </div>
+        </div>
+
+        <div id="subjectContainer" class="flex-1 min-w-[150px]">
+          <label class="block text-sm font-semibold text-slate-700 mb-2">과목 선택</label>
+          <select id="subjectSelect" class="w-full border rounded-lg px-4 py-2 bg-slate-50 outline-none" onchange="updateDashboard()"></select>
+        </div>
+        
+        <div id="classContainer" class="flex-1 min-w-[150px]">
+          <label class="block text-sm font-semibold text-slate-700 mb-2">학급 선택</label>
+          <select id="classSelect" class="w-full border rounded-lg px-4 py-2 bg-slate-50 outline-none" onchange="updateDashboard()"></select>
+        </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <h2 id="chartTitle" class="text-lg font-bold mb-4 text-slate-800">등급 분포</h2>
+        
+        <div id="chartContainer" class="relative h-96 w-full">
+          <canvas id="gradeChart"></canvas>
+        </div>
+
+        <div id="tableContainer" class="hidden overflow-x-auto">
+          <table class="w-full text-left border-collapse min-w-[800px]">
+            <thead>
+              <tr class="bg-slate-100 border-y-2 border-slate-200">
+                <th id="tableFirstColHeader" class="p-3 font-semibold text-slate-700 w-32">과목</th>
+                <th class="p-3 font-semibold text-slate-700 w-24">월</th>
+                <th class="p-3 font-semibold text-slate-700 text-center w-16">1등급</th>
+                <th class="p-3 font-semibold text-slate-700 text-center w-16">2등급</th>
+                <th class="p-3 font-semibold text-slate-700 text-center w-16">3등급</th>
+                <th class="p-3 font-semibold text-slate-700 text-center w-16">4등급</th>
+                <th class="p-3 font-semibold text-slate-700 text-center w-16">5등급</th>
+                <th class="p-3 font-semibold text-slate-700 text-center w-16">6등급</th>
+                <th class="p-3 font-semibold text-slate-700 text-center w-16">7등급</th>
+                <th class="p-3 font-semibold text-slate-700 text-center w-16">8등급</th>
+                <th class="p-3 font-semibold text-slate-700 text-center w-16">9등급</th>
+                <th class="p-3 font-semibold text-blue-700 text-center w-24">응시 인원</th>
+              </tr>
+            </thead>
+            <tbody id="dataTableBody">
+              </tbody>
+          </table>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let allData = {};
+    let parsedMeta = {};
+    let chartInstance = null;
+    let currentMode = 'chart'; 
+
+    // 글씨 가독성을 위해 배경색 투명도를 0.7 -> 0.85로 상향 조정
+    const chartColors = [
+      { bg: 'rgba(59, 130, 246, 0.85)', border: 'rgba(37, 99, 235, 1)' },   // 파랑
+      { bg: 'rgba(16, 185, 129, 0.85)', border: 'rgba(5, 150, 105, 1)' },   // 초록
+      { bg: 'rgba(168, 85, 247, 0.85)', border: 'rgba(147, 51, 234, 1)' },  // 보라
+      { bg: 'rgba(245, 158, 11, 0.85)', border: 'rgba(217, 119, 6, 1)' }    // 주황
+    ];
+
+    window.onload = () => {
+      google.script.run.withSuccessHandler(initDashboard).getSheetData();
+    };
+
+    function initDashboard(data) {
+      allData = data;
+      parseAllData();
+      
+      const gradeSelect = document.getElementById('gradeSelect');
+      Object.keys(parsedMeta).sort().forEach(grade => {
+        gradeSelect.add(new Option(grade, grade));
+      });
+
+      if(gradeSelect.options.length > 0) onGradeChange();
+
+      document.getElementById('loadingIndicator').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+    }
+
+    function toggleMonthDropdown() {
+      const checkList = document.getElementById('monthChecklist');
+      checkList.classList.toggle('visible');
+    }
+
+    function getSortedSubjects(subjectSet, gradeStr) {
+      const isGrade3 = gradeStr.includes('3학년');
+      const subjectsArray = Array.from(subjectSet).filter(s => !s.includes('제2외국어'));
+
+      if (!isGrade3) {
+        const order = ['국어', '수학', '영어', '한국사', '통합사회', '통합과학'];
+        return subjectsArray
+          .filter(s => order.includes(s))
+          .sort((a, b) => order.indexOf(a) - order.indexOf(b));
+      } else {
+        const commonOrder = ['국어', '수학', '영어', '한국사'];
+        let common = [];
+        let humanities = [];
+        let sciences = [];
+
+        subjectsArray.forEach(s => {
+          if (commonOrder.includes(s)) {
+            common.push(s);
+          } else if (['물리', '화학', '생명', '지구과학'].some(k => s.includes(k))) {
+            sciences.push(s);
+          } else {
+            humanities.push(s);
+          }
+        });
+
+        common.sort((a, b) => commonOrder.indexOf(a) - commonOrder.indexOf(b));
+        humanities.sort((a, b) => a.localeCompare(b, 'ko'));
+        sciences.sort((a, b) => a.localeCompare(b, 'ko'));
+
+        return [...common, ...humanities, ...sciences];
+      }
+    }
+
+    function parseAllData() {
+      for (let grade in allData) {
+        parsedMeta[grade] = {};
+        let isGrade3 = grade.includes('3학년');
+
+        for (let month in allData[grade]) {
+          let sheetData = allData[grade][month];
+          let meta = { classCol: -1, gradeCols: {}, dynamicCols: [], classes: new Set(), subjects: new Set() };
+          
+          let currentTopHeader = "";
+          let tempSubjectCol = -1;
+
+          for (let c = 0; c < sheetData[0].length; c++) {
+            let h0 = sheetData[0][c] ? String(sheetData[0][c]).trim() : "";
+            let h1 = sheetData[1][c] ? String(sheetData[1][c]).trim() : "";
+            let h2 = sheetData[2][c] ? String(sheetData[2][c]).trim() : "";
+            
+            if (h0 !== "") currentTopHeader = h0;
+
+            if (h0 === '반' || h1 === '반' || h2 === '반') {
+              meta.classCol = c;
+              continue;
+            }
+
+            if (currentTopHeader.includes('제2외국어') || h0.includes('제2외국어') || h1.includes('제2외국어')) {
+              continue;
+            }
+
+            let isGradeCol = h0.includes('등급') || h1.includes('등급') || h2.includes('등급');
+            let isSubjectNameCol = h0 === '과목' || h1 === '과목' || h2 === '과목';
+
+            if (isGrade3) {
+              if (currentTopHeader.includes('선택') || currentTopHeader.includes('탐구')) {
+                if (isSubjectNameCol) tempSubjectCol = c;
+                if (isGradeCol && tempSubjectCol !== -1) {
+                  meta.dynamicCols.push({ nameCol: tempSubjectCol, gradeCol: c });
+                  tempSubjectCol = -1; 
+                }
+              } else if (isGradeCol) {
+                let subj = currentTopHeader || `과목(${c})`;
+                if (subj !== '반' && subj !== '이름' && !subj.includes('번호')) {
+                  meta.gradeCols[subj] = c;
+                  meta.subjects.add(subj);
+                }
+              }
+            } else {
+              if (isGradeCol) {
+                let subj = currentTopHeader;
+                if (currentTopHeader.includes('선택1') || h0.includes('선택1') || h1.includes('선택1')) subj = '통합사회';
+                else if (currentTopHeader.includes('선택2') || h0.includes('선택2') || h1.includes('선택2')) subj = '통합과학';
+
+                if (!subj) subj = `과목(${c})`;
+
+                if (subj !== '반' && subj !== '이름' && !subj.includes('번호')) {
+                  meta.gradeCols[subj] = c;
+                  meta.subjects.add(subj);
+                }
+              }
+            }
+          }
+
+          for (let r = 3; r < sheetData.length; r++) {
+            if (meta.classCol !== -1 && sheetData[r][meta.classCol]) {
+              let className = String(sheetData[r][meta.classCol]).trim();
+              if (className && !isNaN(className)) meta.classes.add(className);
+            }
+
+            if (isGrade3) {
+              meta.dynamicCols.forEach(dcol => {
+                let subjName = sheetData[r][dcol.nameCol] ? String(sheetData[r][dcol.nameCol]).trim() : "";
+                if (subjName && !subjName.includes('제2외국어')) meta.subjects.add(subjName);
+              });
+            }
+          }
+          parsedMeta[grade][month] = meta;
+        }
+      }
+    }
+    // --- ... existing code ... ---
+
+    function onGradeChange() {
+      const grade = document.getElementById('gradeSelect').value;
+      const months = Object.keys(parsedMeta[grade] || {}).sort();
+      
+      const monthItems = document.getElementById('monthItems');
+      monthItems.innerHTML = '';
+
+      months.forEach((m, idx) => {
+        let li = document.createElement('li');
+        let isChecked = idx === 0 ? 'checked' : '';
+        li.innerHTML = `<label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" value="${m}" class="month-cb form-checkbox h-4 w-4 text-blue-600 rounded" ${isChecked} onchange="updateDashboard()"><span class="text-sm select-none">${m}</span></label>`;
+        monthItems.appendChild(li);
+      });
+
+      let allSubjects = new Set();
+      let allClasses = new Set();
+      months.forEach(m => {
+        parsedMeta[grade][m].subjects.forEach(s => allSubjects.add(s));
+        parsedMeta[grade][m].classes.forEach(c => allClasses.add(c));
+      });
+
+      const subjectSelect = document.getElementById('subjectSelect');
+      subjectSelect.innerHTML = '';
+      
+      const sortedSubjects = getSortedSubjects(allSubjects, grade);
+      sortedSubjects.forEach(s => subjectSelect.add(new Option(s, s)));
+
+      const classSelect = document.getElementById('classSelect');
+      classSelect.innerHTML = '<option value="전체">전체 학급</option>';
+      Array.from(allClasses).sort((a,b)=>a-b).forEach(c => classSelect.add(new Option(c+"반", c)));
+
+      updateDashboard();
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      
+      const activeCls = 'px-6 py-2 rounded-lg font-semibold border tab-active transition-colors';
+      const inactiveCls = 'px-6 py-2 rounded-lg font-semibold border tab-inactive transition-colors';
+      document.getElementById('modeChart').className = mode === 'chart' ? activeCls : inactiveCls;
+      document.getElementById('modeTable').className = mode === 'table' ? activeCls : inactiveCls;
+      document.getElementById('modeClassTable').className = mode === 'classTable' ? activeCls : inactiveCls;
+      
+      // 학급 전체 과목 요약표: 과목 숨김 / 과목별 학급 요약표: 학급 숨김
+      document.getElementById('subjectContainer').classList.toggle('hidden', mode === 'table');
+      document.getElementById('classContainer').classList.toggle('hidden', mode === 'classTable');
+      document.getElementById('monthChecklist').classList.remove('visible');
+
+      updateDashboard();
+    }
+
+    function getCounts(grade, month, subject, className) {
+      let counts = Array(9).fill(0);
+      let meta = parsedMeta[grade][month];
+      if (!meta) return counts;
+
+      let sheetData = allData[grade][month];
+      if (!sheetData || sheetData.length <= 3) return counts; 
+      
+      let isGrade3 = grade.includes('3학년');
+      let colIdx = meta.gradeCols[subject];
+      
+      let isDynamic = isGrade3 && colIdx === undefined;
+
+      if (colIdx === undefined && !isDynamic) return counts;
+
+      for (let r = 3; r < sheetData.length; r++) {
+        let row = sheetData[r];
+        let studentClass = meta.classCol !== -1 ? String(row[meta.classCol]).trim() : "";
+        
+        if (className !== '전체' && studentClass !== className) continue;
+
+        let gradeVal = NaN;
+
+        if (isDynamic) {
+          for (let dcol of meta.dynamicCols) {
+            let rowSubj = row[dcol.nameCol] ? String(row[dcol.nameCol]).trim() : "";
+            if (rowSubj === subject) {
+              gradeVal = parseInt(row[dcol.gradeCol], 10);
+              break; 
+            }
+          }
+        } else {
+          gradeVal = parseInt(row[colIdx], 10);
+        }
+
+        if (!isNaN(gradeVal) && gradeVal >= 1 && gradeVal <= 9) {
+          counts[gradeVal - 1]++;
+        }
+      }
+      return counts;
+    }
+
+    function updateDashboard() {
+      const grade = document.getElementById('gradeSelect').value;
+      const subject = document.getElementById('subjectSelect').value;
+      const className = document.getElementById('classSelect').value;
+      
+      const chartContainer = document.getElementById('chartContainer');
+      const tableContainer = document.getElementById('tableContainer');
+
+      const checkboxes = document.querySelectorAll('.month-cb:checked');
+      const selectedMonths = Array.from(checkboxes).map(cb => cb.value).sort();
+
+      const anchor = document.querySelector('#monthChecklist .anchor');
+      if (selectedMonths.length === 0) {
+         anchor.textContent = "월 선택...";
+      } else if (selectedMonths.length <= 2) {
+         anchor.textContent = selectedMonths.join(', ');
+      } else {
+         anchor.textContent = `${selectedMonths.length}개 월 선택됨`;
+      }
+
+      if (selectedMonths.length === 0) {
+        document.getElementById('chartTitle').innerHTML = `<span class="text-rose-500 font-medium">⚠️ 분석할 월을 최소 하나 이상 선택해 주세요.</span>`;
+        if (chartInstance) chartInstance.destroy();
+        document.getElementById('dataTableBody').innerHTML = '<tr><td colspan="12" class="p-8 text-center text-slate-400">선택된 월이 없습니다.</td></tr>';
+        return;
+      }
+
+      if (currentMode === 'table' || currentMode === 'classTable') {
+        chartContainer.classList.add('hidden');
+        tableContainer.classList.remove('hidden');
+        
+        const tbody = document.getElementById('dataTableBody');
+        tbody.innerHTML = '';
+        document.getElementById('tableFirstColHeader').textContent = currentMode === 'classTable' ? '학급' : '과목';
+
+        if (currentMode === 'table') {
+          document.getElementById('chartTitle').innerHTML = `${grade} 학급 전체 과목 요약표 (${className === '전체' ? '전체' : className+'반'})`;
+          
+          let allSubjectsForGrade = new Set();
+          Object.keys(parsedMeta[grade]).forEach(m => {
+            parsedMeta[grade][m].subjects.forEach(s => allSubjectsForGrade.add(s));
+          });
+
+          let subjects = getSortedSubjects(allSubjectsForGrade, grade);
+          
+          subjects.forEach(subj => {
+            let isFirstRow = true;
+            let rowSpan = 0;
+            let tempRows = [];
+
+            selectedMonths.forEach(month => {
+              if(!parsedMeta[grade][month] || !parsedMeta[grade][month].subjects.has(subj)) return;
+
+              let counts = getCounts(grade, month, subj, className);
+              let totalStudents = counts.reduce((a, b) => a + b, 0);
+              
+              if (totalStudents > 0) {
+                rowSpan++;
+                let tr = document.createElement('tr');
+                tr.className = "border-b border-slate-200 hover:bg-slate-50 transition-colors";
+                
+                let html = '';
+                if (isFirstRow) {
+                  html += `<td class="p-3 font-medium text-slate-800 align-top bg-white" rowspan="__ROWSPAN_PLACEHOLDER__">${subj}</td>`;
+                  isFirstRow = false;
+                }
+                
+                html += `<td class="p-3 text-slate-600 font-medium">${month}</td>`;
+                counts.forEach(c => {
+                  html += `<td class="p-3 text-center text-slate-600">${c > 0 ? c : '<span class="text-slate-300">-</span>'}</td>`;
+                });
+                html += `<td class="p-3 text-center font-bold text-blue-600 bg-blue-50/30">${totalStudents}</td>`;
+                
+                tr.innerHTML = html;
+                tempRows.push(tr);
+              }
+            });
+
+            if (tempRows.length > 0) {
+              tempRows[0].innerHTML = tempRows[0].innerHTML.replace('__ROWSPAN_PLACEHOLDER__', rowSpan);
+              tempRows.forEach(row => tbody.appendChild(row));
+            }
+          });
+
+        } else {
+          // 과목별 학급 요약표: 선택한 과목에 대해 1반~끝반 등급별 인원
+          document.getElementById('chartTitle').innerHTML = `${grade} ${subject} 과목별 학급 요약표`;
+
+          let allClasses = new Set();
+          selectedMonths.forEach(m => {
+            if (parsedMeta[grade][m]) {
+              parsedMeta[grade][m].classes.forEach(c => allClasses.add(c));
+            }
+          });
+          const sortedClasses = Array.from(allClasses).sort((a, b) => Number(a) - Number(b));
+
+          // 전체 행(학년 합계)을 맨 위에 표시
+          const classRows = ['전체', ...sortedClasses];
+
+          classRows.forEach(cls => {
+            let isFirstRow = true;
+            let rowSpan = 0;
+            let tempRows = [];
+            const displayName = cls === '전체' ? '전체' : cls + '반';
+
+            selectedMonths.forEach(month => {
+              if (!parsedMeta[grade][month] || !parsedMeta[grade][month].subjects.has(subject)) return;
+
+              let counts = getCounts(grade, month, subject, cls);
+              let totalStudents = counts.reduce((a, b) => a + b, 0);
+
+              if (totalStudents > 0) {
+                rowSpan++;
+                let tr = document.createElement('tr');
+                tr.className = cls === '전체'
+                  ? "border-b border-slate-200 bg-blue-50/40 hover:bg-blue-50 transition-colors"
+                  : "border-b border-slate-200 hover:bg-slate-50 transition-colors";
+
+                let html = '';
+                if (isFirstRow) {
+                  html += `<td class="p-3 font-medium text-slate-800 align-top ${cls === '전체' ? 'bg-blue-50/40' : 'bg-white'}" rowspan="__ROWSPAN_PLACEHOLDER__">${displayName}</td>`;
+                  isFirstRow = false;
+                }
+
+                html += `<td class="p-3 text-slate-600 font-medium">${month}</td>`;
+                counts.forEach(c => {
+                  html += `<td class="p-3 text-center text-slate-600">${c > 0 ? c : '<span class="text-slate-300">-</span>'}</td>`;
+                });
+                html += `<td class="p-3 text-center font-bold text-blue-600 bg-blue-50/30">${totalStudents}</td>`;
+
+                tr.innerHTML = html;
+                tempRows.push(tr);
+              }
+            });
+
+            if (tempRows.length > 0) {
+              tempRows[0].innerHTML = tempRows[0].innerHTML.replace('__ROWSPAN_PLACEHOLDER__', rowSpan);
+              tempRows.forEach(row => tbody.appendChild(row));
+            }
+          });
+        }
+        
+      } else {
+        chartContainer.classList.remove('hidden');
+        tableContainer.classList.add('hidden');
+        
+        const labels = ['1등급', '2등급', '3등급', '4등급', '5등급', '6등급', '7등급', '8등급', '9등급'];
+        let datasets = [];
+
+        if (selectedMonths.length === 1) {
+          const month = selectedMonths[0];
+          let counts = getCounts(grade, month, subject, className);
+          let totalStudents = counts.reduce((a, b) => a + b, 0); 
+          
+          document.getElementById('chartTitle').innerHTML = `${grade} ${month} ${subject} 등급 분포 (${className === '전체' ? '전체' : className+'반'}) <span class="text-sm font-normal text-blue-600 ml-2">(총 응시 인원: ${totalStudents}명)</span>`;
+          
+          datasets.push({
+            label: month,
+            data: counts,
+            backgroundColor: chartColors[0].bg,
+            borderColor: chartColors[0].border,
+            borderWidth: 1,
+            borderRadius: 4
+          });
+        } else {
+          let totalTextArray = [];
+          
+          selectedMonths.forEach((m, idx) => {
+            let counts = getCounts(grade, m, subject, className);
+            let totalStudents = counts.reduce((a, b) => a + b, 0);
+            totalTextArray.push(`${m} ${totalStudents}명`); 
+            
+            datasets.push({
+              label: m,
+              data: counts,
+              backgroundColor: chartColors[idx % chartColors.length].bg,
+              borderColor: chartColors[idx % chartColors.length].border,
+              borderWidth: 1,
+              borderRadius: 4
+            });
+          });
+          
+          document.getElementById('chartTitle').innerHTML = `${grade} 선택 월별 ${subject} 성적 추이 (${className === '전체' ? '전체' : className+'반'}) <span class="text-sm font-normal text-blue-600 ml-2">(응시 인원: ${totalTextArray.join(', ')})</span>`;
+        }
+
+        const ctx = document.getElementById('gradeChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+        
+        chartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: { labels: labels, datasets: datasets },
+          plugins: [ChartDataLabels], // 데이터 라벨 플러그인 장착
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { 
+              tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y}명` } },
+              // 막대그래프 중간 인원수 표시 설정
+              datalabels: {
+                anchor: 'center', // 막대 기준 위치 (중앙)
+                align: 'center',  // 텍스트 정렬 위치 (중앙)
+                color: '#ffffff', // 텍스트 컬러 (흰색)
+                font: {
+                  weight: 'bold',
+                  size: 11
+                },
+                formatter: function(value) {
+                  return value > 0 ? value + '명' : ''; // 인원이 0명인 막대에는 표시하지 않음
+                }
+              }
+            },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+          }
+        });
+      }
+    }
+
+    document.addEventListener('click', function(event) {
+      const checkList = document.getElementById('monthChecklist');
+      if (checkList && !checkList.contains(event.target) && checkList.classList.contains('visible')) {
+        checkList.classList.remove('visible');
+      }
+    });
+  </script>
+</body>
+</html>
