@@ -296,7 +296,7 @@
   <header class="bg-white border-b-4 border-[#5eead4] p-5 shadow-sm no-print">
     <div class="max-w-7xl mx-auto flex justify-between items-center gap-4">
       <div>
-        <h1 class="text-xl font-bold tracking-tight text-teal-800">🌿 교과목별 2차 선택 명단 조회(교과용)</h1>
+        <h1 class="text-xl font-bold tracking-tight text-teal-800">🌿 교과목별 최종 선택 명단 조회(교과용)</h1>
         <p class="text-teal-600/70 text-xs mt-1 font-medium">자료 기준: <span id="refTime">불러오는 중...</span></p>
       </div>
       <div class="flex gap-2">
@@ -486,7 +486,7 @@
     function getStatsHeaderHtml(refTimeValue) {
       return `
         <div class="text-center mb-6">
-          <h2 class="text-xl md:text-2xl font-bold text-teal-800 tracking-tight">2027학년도 과목선택 인원 통계(${activeGrade})_2차</h2>
+          <h2 class="text-xl md:text-2xl font-bold text-teal-800 tracking-tight">2027학년도 과목선택 인원 통계(${activeGrade})_최종</h2>
           <p class="text-xs md:text-sm text-teal-500 mt-1.5 font-medium">자료 기준 시간: ${refTimeValue}</p>
           ${getScienceTrackBadgeHtml()}
           ${getCancelLegendHtml()}
@@ -526,13 +526,29 @@
           return;
         }
 
-        let nameCount = {};
+        const byName = {};
         res.subjects.forEach(s => {
-          nameCount[s.name] = (nameCount[s.name] || 0) + 1;
-          s.occurrence = nameCount[s.name];
+          s.semester = Number(s.semester) === 2 ? 2 : 1;
+          s.occurrence = s.semester;
+          if (!byName[s.name]) byName[s.name] = [];
+          byName[s.name].push(s);
         });
-        res.subjects.forEach(s => {
-          s.displayName = nameCount[s.name] > 1 ? (s.name + " (" + s.occurrence + "학기)") : s.name;
+        Object.keys(byName).forEach(name => {
+          const list = byName[name];
+          // 동일 과목명이 여러 열이면(학기별 중복) 학기가 겹치지 않게 보정
+          if (list.length > 1) {
+            const uniqueSem = new Set(list.map(s => s.semester));
+            if (uniqueSem.size < list.length) {
+              list.forEach((s, i) => {
+                s.semester = i + 1;
+                s.occurrence = s.semester;
+              });
+            }
+          }
+          list.forEach(s => {
+            // 자료 시트의 1·2학기 구분을 항상 표시
+            s.displayName = s.name + " (" + s.semester + "학기)";
+          });
         });
 
         cachedSubjectData = res;
@@ -569,6 +585,27 @@
       } else {
         alert("일치하는 과목 명단이 없습니다.");
       }
+    }
+
+    function getPanelSemester(panelTitle) {
+      const t = String(panelTitle || '');
+      if (/2\s*학기/.test(t)) return 2;
+      if (/1\s*학기/.test(t)) return 1;
+      return 0;
+    }
+
+    /** 통계표 과목 클릭 시 — 자료 시트의 해당 학기 컬럼만 연결 (다른 학기로 오연결 금지) */
+    function findSubjectForStatsClick(name, panelTitle) {
+      if (!cachedSubjectData || !cachedSubjectData.subjects) return null;
+      const matches = cachedSubjectData.subjects.filter(s => s.name === name);
+      if (!matches.length) return null;
+
+      const sem = getPanelSemester(panelTitle);
+      if (sem) {
+        // 예: 통계 1학기 칸만 있고 자료에는 2학기 컬럼만 있으면 클릭 비활성
+        return matches.find(s => Number(s.semester) === sem) || null;
+      }
+      return matches[0];
     }
 
     function restoreStatsTable() {
@@ -787,7 +824,7 @@
       return '';
     }
 
-    function buildStatsPanelHtml(grid, block, lastR, validSubjectNames, renderOccurrences, panelTitle) {
+    function buildStatsPanelHtml(grid, block, lastR, validSubjectNames, panelTitle) {
       const colCount = block.endC - block.startC + 1;
       const widths = [];
       if (colCount === 1) {
@@ -913,12 +950,10 @@
           }
 
           if (validSubjectNames.includes(cellText)) {
-            renderOccurrences[cellText] = (renderOccurrences[cellText] || 0) + 1;
-            const targetSubj = cachedSubjectData.subjects.find(
-              s => s.name === cellText && s.occurrence === renderOccurrences[cellText]
-            );
+            const targetSubj = findSubjectForStatsClick(cellText, panelTitle);
             if (targetSubj) {
-              cellsHtml += `<td style="${style}" class="clickable-subject ${classes}" onclick="jumpToSubject('${targetSubj.index}')" rowspan="${rowspan}" colspan="${colspan}"><span class="cell-text subj-link" title="${escapeHtml(cellText)}">${escapeHtml(cellText)}</span></td>`;
+              const tip = targetSubj.displayName || cellText;
+              cellsHtml += `<td style="${style}" class="clickable-subject ${classes}" onclick="jumpToSubject('${targetSubj.index}')" rowspan="${rowspan}" colspan="${colspan}"><span class="cell-text subj-link" title="${escapeHtml(tip)}">${escapeHtml(cellText)}</span></td>`;
               continue;
             }
           }
@@ -958,7 +993,6 @@
         document.getElementById('tableScrollArea').classList.remove('hidden');
 
         const validSubjectNames = [...new Set(cachedSubjectData.subjects.map(s => s.name))];
-        let renderOccurrences = {};
         const bounds = getStatsUsedBounds(grid);
         const blocks = getStatsColumnBlocks(grid, bounds.lastR, bounds.lastC);
 
@@ -968,7 +1002,7 @@
           if (!title && blocks.length > 1) title = idx === 0 ? '1학기' : '2학기';
           html += `<div class="stats-panel">`;
           if (title) html += `<h3 class="stats-panel-title">${escapeHtml(title)}</h3>`;
-          html += buildStatsPanelHtml(grid, block, bounds.lastR, validSubjectNames, renderOccurrences, title);
+          html += buildStatsPanelHtml(grid, block, bounds.lastR, validSubjectNames, title);
           html += `</div>`;
         });
         html += `</div></div></div>`;

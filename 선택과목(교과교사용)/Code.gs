@@ -1,23 +1,30 @@
 function doGet() {
   return HtmlService.createTemplateFromFile('Index')
       .evaluate()
-      .setTitle('2027학년도 교과목별 2차 선택 명단 (교과용)')
+      .setTitle('2027학년도 교과목별 최종 선택 명단 (교과용)')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 // 연결할 구글 스프레드시트 고유 ID
-var SPREADSHEET_ID = "1leOtf6ODIewpRXcK6cqVaa_26vxTGxXsjzNSoN4rdCI";
+var SPREADSHEET_ID = "1gvC_p1Xfewdc4iGsV_nVJV2R5r2yt-R2mJIRo3JjEAY";
 
 // 자료 기준 시간 가져오기
 function getDataTimestamp() {
   try {
     var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     var sheet = ss.getSheetByName('자료(1학년)');
-    return sheet ? sheet.getRange("D1").getDisplayValue() : "정보 없음";
+    if (!sheet) return "정보 없음";
+    var d1 = sheet.getRange("D1").getDisplayValue();
+    if (d1 && String(d1).trim() !== "") return d1;
+    var c1 = sheet.getRange("C1").getDisplayValue();
+    return c1 || "정보 없음";
   } catch(e) { return "시간 정보 로드 실패"; }
 }
 
-// [수정된 핵심 로직] 3행에서 과목명을 가져오고, 학생 명단은 5행부터 읽어오기
+/**
+ * 2행 카테고리(1학기/2학기)와 3행 과목명으로 과목 목록 구성.
+ * 동일 과목명이 학기별로 있으면 semester로 구분한다.
+ */
 function getFullSubjectData(gradeName) {
   try {
     var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -30,14 +37,39 @@ function getFullSubjectData(gradeName) {
     // 명단이 5행부터 시작하므로 최소 5행 이상 데이터가 있어야 합니다.
     if (lastRow < 5 || lastCol < 8) return null; 
     
-    // 1. 과목명 헤더는 3행(1줄)에서만 정확하게 가져옵니다.
+    // 2행: 학기/택 구분(병합 셀 포함), 3행: 과목명
+    var catRange = sheet.getRange(2, 1, 1, lastCol);
+    var categoryRow = catRange.getDisplayValues()[0];
+    // 병합된 학기 헤더 값을 해당 구간의 모든 열에 채워 학기 판별을 안정화
+    var catMerged = catRange.getMergedRanges();
+    for (var m = 0; m < catMerged.length; m++) {
+      var mr = catMerged[m];
+      var mVal = String(mr.getDisplayValue() || '').trim();
+      if (!mVal) continue;
+      var cStart = mr.getColumn() - 1;
+      var cEnd = mr.getLastColumn() - 1;
+      for (var c = cStart; c <= cEnd; c++) {
+        if (c >= 0 && c < categoryRow.length) categoryRow[c] = mVal;
+      }
+    }
     var headers = sheet.getRange(3, 1, 1, lastCol).getDisplayValues()[0];
     
     var subjects = [];
+    var currentSemester = 1;
     // H열(8번째 열, 인덱스 7)부터 과목명을 스캔하여 저장합니다.
     for (var i = 7; i < headers.length; i++) {
-      if (headers[i].trim() !== "") {
-        subjects.push({ name: headers[i].trim(), index: i });
+      var cat = String(categoryRow[i] || '').trim();
+      if (/2\s*학기/.test(cat)) currentSemester = 2;
+      else if (/1\s*학기/.test(cat)) currentSemester = 1;
+
+      var name = String(headers[i] || '').trim();
+      if (name !== "") {
+        subjects.push({
+          name: name,
+          index: i,
+          semester: currentSemester,
+          category: cat || (currentSemester + '학기')
+        });
       }
     }
     
