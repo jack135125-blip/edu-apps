@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>삼수선 정리 — 인터랙티브 보조자료</title>
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+      startup: { typeset: false }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+  <style>
+    :root {
+      --ink: #1a2332;
+      --muted: #5a6577;
+      --line: #d8dee8;
+      --bg: #f6f4ef;
+      --card: #fff;
+      --accent: #1e4d7b;
+      --accent-soft: #e8f0f7;
+      --given: #1e6b4f;
+      --given-bg: #e8f5ef;
+      --conclude: #8b3a1a;
+      --conclude-bg: #fbf0e8;
+      --step: #3d4f6f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1100px 480px at 0% -10%, #e4eef6 0%, transparent 55%),
+        radial-gradient(900px 400px at 100% 0%, #efe6da 0%, transparent 50%),
+        var(--bg);
+      line-height: 1.65;
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.6rem 1.1rem 3rem;
+    }
+    header {
+      margin-bottom: 1.2rem;
+      padding-bottom: 0.9rem;
+      border-bottom: 2px solid var(--accent);
+    }
+    .eyebrow {
+      margin: 0 0 0.25rem;
+      color: var(--accent);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+    h1 {
+      margin: 0 0 0.35rem;
+      font-size: clamp(1.35rem, 3vw, 1.75rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .meta { margin: 0; color: var(--muted); font-size: 0.92rem; }
+
+    .setup {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 0.95rem 1.1rem;
+      margin: 1rem 0 1.15rem;
+      box-shadow: 0 8px 22px rgba(26, 35, 50, 0.04);
+      font-size: 0.95rem;
+    }
+    .setup strong { color: var(--accent); }
+
+    .case-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-bottom: 1rem;
+    }
+    .case-tabs button {
+      appearance: none;
+      border: 1px solid #c5d6e8;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 0.45rem 0.95rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .case-tabs button:hover { background: #d6e6f4; }
+    .case-tabs button.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.15fr 0.95fr;
+      gap: 1rem;
+      align-items: start;
+    }
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    .viz-card, .proof-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 8px 22px rgba(26, 35, 50, 0.04);
+      overflow: hidden;
+    }
+    .viz-card { position: relative; }
+    .viz-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid var(--line);
+      background: #fafbfc;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .viz-toolbar .hint { flex: 1; min-width: 140px; }
+    .viz-toolbar button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 0.28rem 0.65rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .viz-toolbar button:hover { background: var(--accent-soft); border-color: #c5d6e8; }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      cursor: grab;
+      background: linear-gradient(165deg, #f8fafc 0%, #eef3f8 100%);
+      touch-action: none;
+    }
+    canvas:active { cursor: grabbing; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem 1rem;
+      padding: 0.55rem 0.85rem 0.7rem;
+      border-top: 1px solid var(--line);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .swatch {
+      width: 14px; height: 3px; border-radius: 2px; display: inline-block;
+    }
+    .swatch.given { background: #1e6b4f; height: 4px; }
+    .swatch.conclude { background: #c0392b; height: 4px; }
+    .swatch.plane { background: #c4a882; height: 10px; width: 14px; border-radius: 2px; opacity: 0.55; }
+    .swatch.line { background: #2c3e50; }
+
+    .proof-card { padding: 1rem 1.1rem 1.15rem; }
+    .case-title {
+      margin: 0 0 0.55rem;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .given-box, .conclude-box {
+      border-radius: 10px;
+      padding: 0.55rem 0.75rem;
+      margin: 0.4rem 0;
+      font-size: 0.92rem;
+    }
+    .given-box {
+      background: var(--given-bg);
+      border: 1px solid #b8ddc8;
+      color: var(--given);
+    }
+    .conclude-box {
+      background: var(--conclude-bg);
+      border: 1px solid #efd2bf;
+      color: var(--conclude);
+      font-weight: 700;
+    }
+    .label-tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      margin-right: 0.35rem;
+      opacity: 0.85;
+    }
+
+    .steps { margin-top: 0.85rem; }
+    .steps h3 {
+      margin: 0 0 0.45rem;
+      font-size: 0.92rem;
+      color: var(--accent);
+    }
+    .step-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      counter-reset: step;
+    }
+    .step-list li {
+      counter-increment: step;
+      position: relative;
+      padding: 0.55rem 0.65rem 0.55rem 2.35rem;
+      margin: 0.35rem 0;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: #fafbfc;
+      color: var(--step);
+      font-size: 0.9rem;
+      opacity: 0.35;
+      transition: opacity 0.25s, border-color 0.25s, background 0.25s;
+    }
+    .step-list li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0.55rem;
+      top: 0.55rem;
+      width: 1.35rem;
+      height: 1.35rem;
+      border-radius: 7px;
+      background: #d8dee8;
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-list li.visible {
+      opacity: 1;
+      border-color: var(--line);
+      background: #fff;
+    }
+    .step-list li.visible::before { background: var(--accent); }
+    .step-list li.current {
+      border-color: #a8c4de;
+      background: var(--accent-soft);
+      box-shadow: 0 0 0 1px rgba(30, 77, 123, 0.08);
+    }
+
+    .step-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+    }
+    .step-controls button {
+      appearance: none;
+      border: 1px solid #c5d6e8;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 9px;
+      padding: 0.42rem 0.85rem;
+      font-size: 0.86rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .step-controls button.secondary {
+      background: #fff;
+      color: var(--accent);
+    }
+    .step-controls button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .step-progress {
+      margin-top: 0.55rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .idea {
+      margin-top: 0.9rem;
+      padding: 0.65rem 0.8rem;
+      background: #f3f6fa;
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+
+    footer {
+      margin-top: 1.6rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <p class="eyebrow">고등학교 기하 · 공간도형</p>
+      <h1>삼수선 정리</h1>
+      <p class="meta">세 가지 경우를 선택하고, 그림을 돌려 보며 증명 단계를 따라가 보세요.</p>
+    </header>
+
+    <div class="setup">
+      <strong>기본 설정</strong> —
+      평면 $\alpha$ 위에 있지 않은 점 $P$,
+      평면 $\alpha$ 위의 점 $O$,
+      점 $O$를 지나지 않는 평면 $\alpha$ 위의 직선 $l$,
+      직선 $l$ 위의 점 $H$에 대하여
+    </div>
+
+    <div class="case-tabs" role="tablist" aria-label="삼수선 정리 경우">
+      <button type="button" class="active" data-case="1" role="tab" aria-selected="true">① PO ⊥ α, OH ⊥ l → PH ⊥ l</button>
+      <button type="button" data-case="2" role="tab" aria-selected="false">② PO ⊥ α, PH ⊥ l → OH ⊥ l</button>
+      <button type="button" data-case="3" role="tab" aria-selected="false">③ PH ⊥ l, OH ⊥ l, PO ⊥ OH → PO ⊥ α</button>
+    </div>
+
+    <div class="layout">
+      <section class="viz-card" aria-label="입체 도형">
+        <div class="viz-toolbar">
+          <span class="hint">마우스로 드래그하여 회전 · 휠로 확대/축소</span>
+          <button type="button" id="btn-reset-view">시점 초기화</button>
+        </div>
+        <canvas id="scene" width="720" height="520" aria-label="삼수선 정리 입체도"></canvas>
+        <div class="legend">
+          <span><i class="swatch plane"></i> 평면 $\alpha$</span>
+          <span><i class="swatch line"></i> 직선 $l$</span>
+          <span><i class="swatch given"></i> 주어진 수직</span>
+          <span><i class="swatch conclude"></i> 결론</span>
+          <span><i class="swatch" style="background:#7ec89a;height:10px;width:14px;opacity:.55;border-radius:2px"></i> 평면 $POH$</span>
+        </div>
+      </section>
+
+      <section class="proof-card" aria-label="증명">
+        <h2 class="case-title" id="case-title">경우 ①</h2>
+        <div class="given-box" id="given-box"></div>
+        <div class="conclude-box" id="conclude-box"></div>
+
+        <div class="steps">
+          <h3>증명 따라가기</h3>
+          <ol class="step-list" id="step-list"></ol>
+          <div class="step-controls">
+            <button type="button" id="btn-prev" class="secondary">이전</button>
+            <button type="button" id="btn-next">다음 단계</button>
+            <button type="button" id="btn-all" class="secondary">전체 보기</button>
+            <button type="button" id="btn-reset-steps" class="secondary">처음으로</button>
+          </div>
+          <p class="step-progress" id="step-progress"></p>
+        </div>
+
+        <div class="idea" id="idea-box"></div>
+      </section>
+    </div>
+
+    <footer>삼수선 정리 수업 보조자료 · 그림을 돌리며 세 수선의 관계를 확인해 보세요.</footer>
+  </div>
+
+  <script>
+    const CASES = {
+      1: {
+        title: "경우 ①",
+        givenHtml: '<span class="label-tag">가정</span>$\\overline{PO} \\perp \\alpha$ 이고 $\\overline{OH} \\perp l$ 이면',
+        concludeHtml: '<span class="label-tag">결론</span>$\\overline{PH} \\perp l$',
+        idea: "핵심 아이디어: 직선이 한 평면 위의 <strong>서로 다른 두 직선</strong>에 수직이면, 그 평면에 수직입니다. 그 평면 위의 모든 직선과도 수직이 됩니다.",
+        steps: [
+          "$\\overline{PO} \\perp \\alpha$ 이고 직선 $l$은 평면 $\\alpha$ 위에 있으므로 $\\overline{PO} \\perp l$이다.",
+          "또한 $\\overline{OH} \\perp l$이므로, 직선 $l$은 서로 만나는 두 직선 $\\overline{PO}$, $\\overline{OH}$에 모두 수직이다. 따라서 $l \\perp$ (평면 $POH$)이다.",
+          "선분 $\\overline{PH}$는 평면 $POH$ 위에 있으므로 $\\overline{PH} \\perp l$이다."
+        ],
+        highlight: { po: "given", oh: "given", ph: "conclude", rightO: true, rightH_oh: true, rightH_ph: "conclude", shadeTri: true }
+      },
+      2: {
+        title: "경우 ②",
+        givenHtml: '<span class="label-tag">가정</span>$\\overline{PO} \\perp \\alpha$ 이고 $\\overline{PH} \\perp l$ 이면',
+        concludeHtml: '<span class="label-tag">결론</span>$\\overline{OH} \\perp l$',
+        idea: "핵심 아이디어: $l$이 평면 $POH$에 수직이면, 그 평면 위의 선분 $\\overline{OH}$와도 수직입니다.",
+        steps: [
+          "$\\overline{PO} \\perp \\alpha$ 이고 직선 $l$은 평면 $\\alpha$ 위에 있으므로 $\\overline{PO} \\perp l$이다.",
+          "또한 $\\overline{PH} \\perp l$이므로, 직선 $l$은 서로 만나는 두 직선 $\\overline{PO}$, $\\overline{PH}$에 모두 수직이다. 따라서 $l \\perp$ (평면 $POH$)이다.",
+          "선분 $\\overline{OH}$는 평면 $POH$ 위에 있으므로 $\\overline{OH} \\perp l$이다."
+        ],
+        highlight: { po: "given", oh: "conclude", ph: "given", rightO: true, rightH_oh: "conclude", rightH_ph: true, shadeTri: true }
+      },
+      3: {
+        title: "경우 ③",
+        givenHtml: '<span class="label-tag">가정</span>$\\overline{PH} \\perp l$, $\\overline{OH} \\perp l$, $\\overline{PO} \\perp \\overline{OH}$ 이면',
+        concludeHtml: '<span class="label-tag">결론</span>$\\overline{PO} \\perp \\alpha$',
+        idea: "핵심 아이디어: 한 직선이 평면 위의 <strong>서로 다른 두 직선</strong>에 수직이면, 그 평면에 수직입니다.",
+        steps: [
+          "$\\overline{OH} \\perp l$, $\\overline{PH} \\perp l$이므로 직선 $l$은 서로 만나는 두 직선 $\\overline{OH}$, $\\overline{PH}$에 모두 수직이다. 따라서 $l \\perp$ (평면 $POH$)이다.",
+          "선분 $\\overline{PO}$는 평면 $POH$ 위에 있으므로 $\\overline{PO} \\perp l$이다.",
+          "가정에서 $\\overline{PO} \\perp \\overline{OH}$이고, 직선 $l$과 $\\overline{OH}$는 평면 $\\alpha$ 위의 서로 다른 두 직선이므로 $\\overline{PO} \\perp \\alpha$이다."
+        ],
+        highlight: { po: "conclude", oh: "given", ph: "given", rightO: "given", rightH_oh: true, rightH_ph: true, shadeTri: true }
+      }
+    };
+
+    // --- Geometry (model space) ---
+    const O = { x: 0, y: 0, z: 0 };
+    const P = { x: 0, y: 0, z: 2.4 };
+    const H = { x: 2.2, y: 0, z: 0 };
+    // line l is parallel to y-axis through H: x=2.2, z=0
+    const L1 = { x: 2.2, y: -2.6, z: 0 };
+    const L2 = { x: 2.2, y: 2.6, z: 0 };
+    const planeCorners = [
+      { x: -2.2, y: -2.8, z: 0 },
+      { x: 3.6, y: -2.8, z: 0 },
+      { x: 3.6, y: 2.8, z: 0 },
+      { x: -2.2, y: 2.8, z: 0 }
+    ];
+
+    // --- View state ---
+    let caseId = 1;
+    let stepIndex = 0; // number of visible steps (0 = none shown yet for "start")
+    let yaw = 0.55;
+    let pitch = 0.42;
+    let scale = 78;
+    let dragging = false;
+    let lastX = 0, lastY = 0;
+
+    const canvas = document.getElementById("scene");
+    const ctx = canvas.getContext("2d");
+
+    function resizeCanvas() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const cssW = canvas.clientWidth || 720;
+      const cssH = Math.round(cssW * 520 / 720);
+      canvas.style.height = cssH + "px";
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
+    }
+
+    function rot(p) {
+      const cy = Math.cos(yaw), sy = Math.sin(yaw);
+      const cp = Math.cos(pitch), sp = Math.sin(pitch);
+      // yaw around z, then pitch around x
+      let x = p.x * cy - p.y * sy;
+      let y = p.x * sy + p.y * cy;
+      let z = p.z;
+      const y2 = y * cp - z * sp;
+      const z2 = y * sp + z * cp;
+      return { x, y: y2, z: z2 };
+    }
+
+    function project(p) {
+      const r = rot(p);
+      const w = canvas.clientWidth || 720;
+      const h = parseFloat(canvas.style.height) || 520;
+      return {
+        x: w / 2 + r.x * scale,
+        y: h * 0.62 - r.z * scale - r.y * scale * 0.15,
+        depth: r.y
+      };
+    }
+
+    function dist2(a, b) {
+      const dx = a.x - b.x, dy = a.y - b.y;
+      return dx * dx + dy * dy;
+    }
+
+    function drawPlane() {
+      const pts = planeCorners.map(project);
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(196, 168, 130, 0.35)";
+      ctx.strokeStyle = "rgba(140, 110, 70, 0.55)";
+      ctx.lineWidth = 1.5;
+      ctx.fill();
+      ctx.stroke();
+
+      // label α
+      const mid = project({ x: -1.5, y: 2.1, z: 0 });
+      ctx.fillStyle = "#7a6348";
+      ctx.font = "italic 600 16px 'Times New Roman', serif";
+      ctx.fillText("α", mid.x, mid.y);
+    }
+
+    function drawSegment(a, b, color, width, dashed) {
+      const A = project(a), B = project(b);
+      ctx.beginPath();
+      ctx.moveTo(A.x, A.y);
+      ctx.lineTo(B.x, B.y);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      if (dashed) ctx.setLineDash([6, 5]);
+      else ctx.setLineDash([]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    function drawPoint(p, label, color, offset) {
+      const s = project(p);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 4.2, 0, Math.PI * 2);
+      ctx.fillStyle = color || "#1a2332";
+      ctx.fill();
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      const ox = (offset && offset.x) || 8;
+      const oy = (offset && offset.y) || -10;
+      ctx.fillStyle = "#1a2332";
+      ctx.font = "700 14px 'Pretendard', 'Malgun Gothic', sans-serif";
+      ctx.fillText(label, s.x + ox, s.y + oy);
+    }
+
+    function drawRightAngle(origin, dirA, dirB, color, size) {
+      // Draw small square at origin between directions dirA and dirB (3D vectors)
+      const s = size || 0.28;
+      const len = (v) => Math.hypot(v.x, v.y, v.z) || 1;
+      const nA = { x: dirA.x / len(dirA) * s, y: dirA.y / len(dirA) * s, z: dirA.z / len(dirA) * s };
+      const nB = { x: dirB.x / len(dirB) * s, y: dirB.y / len(dirB) * s, z: dirB.z / len(dirB) * s };
+      const p0 = origin;
+      const p1 = { x: origin.x + nA.x, y: origin.y + nA.y, z: origin.z + nA.z };
+      const p2 = { x: origin.x + nA.x + nB.x, y: origin.y + nA.y + nB.y, z: origin.z + nA.z + nB.z };
+      const p3 = { x: origin.x + nB.x, y: origin.y + nB.y, z: origin.z + nB.z };
+      const q0 = project(p0), q1 = project(p1), q2 = project(p2), q3 = project(p3);
+      ctx.beginPath();
+      ctx.moveTo(q1.x, q1.y);
+      ctx.lineTo(q2.x, q2.y);
+      ctx.lineTo(q3.x, q3.y);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    function colorFor(role, forceShow) {
+      const steps = CASES[caseId].steps.length;
+      const revealConclude = stepIndex >= steps;
+      if (role === "given") return "#1e6b4f";
+      if (role === "conclude") {
+        if (!revealConclude && !forceShow) return "rgba(192, 57, 43, 0.35)";
+        return "#c0392b";
+      }
+      return "#2c3e50";
+    }
+
+    function widthFor(role) {
+      if (role === "conclude" || role === "given") return 3.2;
+      return 2;
+    }
+
+    function draw() {
+      const w = canvas.clientWidth || 720;
+      const h = parseFloat(canvas.style.height) || 520;
+      ctx.clearRect(0, 0, w, h);
+
+      const hl = CASES[caseId].highlight;
+      const data = CASES[caseId];
+      const steps = data.steps.length;
+      // 2단계부터 평면 POH를 강조
+      const showTri = hl.shadeTri && stepIndex >= 2;
+      const revealConclude = stepIndex >= steps;
+
+      drawPlane();
+
+      // line l
+      drawSegment(L1, L2, "#2c3e50", 2.2);
+      const lLab = project({ x: 2.2, y: 2.35, z: 0 });
+      ctx.fillStyle = "#2c3e50";
+      ctx.font = "italic 700 15px 'Times New Roman', serif";
+      ctx.fillText("l", lLab.x + 6, lLab.y - 4);
+
+      // 평면 POH (삼각형) — l ⊥ 평면 POH를 보일 때 칠함
+      if (showTri) {
+        const tP = project(P), tO = project(O), tH = project(H);
+        ctx.beginPath();
+        ctx.moveTo(tP.x, tP.y);
+        ctx.lineTo(tO.x, tO.y);
+        ctx.lineTo(tH.x, tH.y);
+        ctx.closePath();
+        ctx.fillStyle = "rgba(90, 170, 120, 0.28)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(40, 120, 70, 0.45)";
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        // 라벨
+        const mid = {
+          x: (tP.x + tO.x + tH.x) / 3,
+          y: (tP.y + tO.y + tH.y) / 3
+        };
+        ctx.fillStyle = "#2d6b45";
+        ctx.font = "600 12px 'Pretendard', 'Malgun Gothic', sans-serif";
+        ctx.fillText("평면 POH", mid.x - 28, mid.y);
+      }
+
+      // OH
+      const ohRole = hl.oh;
+      drawSegment(O, H, colorFor(ohRole), widthFor(ohRole));
+
+      // PO
+      const poRole = hl.po;
+      drawSegment(P, O, colorFor(poRole), widthFor(poRole));
+
+      // PH
+      const phRole = hl.ph;
+      drawSegment(P, H, colorFor(phRole), widthFor(phRole));
+
+      // right angles
+      const rightColor = (flag) => {
+        if (flag === true || flag === "given") return "#e85d75";
+        if (flag === "conclude") return revealConclude ? "#c0392b" : "rgba(232, 93, 117, 0.35)";
+        return "#e85d75";
+      };
+
+      if (hl.rightO) {
+        drawRightAngle(O, { x: 0, y: 0, z: 1 }, { x: 1, y: 0, z: 0 }, rightColor(hl.rightO), 0.32);
+      }
+      if (hl.rightH_oh) {
+        drawRightAngle(H, { x: -1, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }, rightColor(hl.rightH_oh), 0.3);
+      }
+      if (hl.rightH_ph) {
+        const phDir = { x: P.x - H.x, y: P.y - H.y, z: P.z - H.z };
+        drawRightAngle(H, phDir, { x: 0, y: 1, z: 0 }, rightColor(hl.rightH_ph), 0.3);
+      }
+
+      drawPoint(O, "O", "#1a2332", { x: -16, y: 16 });
+      drawPoint(H, "H", "#1a2332", { x: 8, y: 16 });
+      drawPoint(P, "P", "#1a2332", { x: 8, y: -12 });
+    }
+
+    // --- UI: cases & steps ---
+    function typeset(nodes) {
+      if (window.MathJax && MathJax.typesetPromise) {
+        const list = nodes ? (Array.isArray(nodes) ? nodes : [nodes]) : undefined;
+        try {
+          if (MathJax.typesetClear) MathJax.typesetClear(list);
+        } catch (_) { /* ignore */ }
+        return MathJax.typesetPromise(list).catch(() => {});
+      }
+      return Promise.resolve();
+    }
+
+    function loadCase(id) {
+      caseId = id;
+      stepIndex = 0;
+      document.querySelectorAll(".case-tabs button").forEach((btn) => {
+        const on = Number(btn.dataset.case) === id;
+        btn.classList.toggle("active", on);
+        btn.setAttribute("aria-selected", on ? "true" : "false");
+      });
+
+      const data = CASES[id];
+      document.getElementById("case-title").textContent = data.title;
+      document.getElementById("given-box").innerHTML = data.givenHtml;
+      document.getElementById("conclude-box").innerHTML = data.concludeHtml;
+      document.getElementById("idea-box").innerHTML = data.idea;
+
+      const list = document.getElementById("step-list");
+      list.innerHTML = data.steps.map((s) => `<li>${s}</li>`).join("");
+
+      updateStepsUI();
+      draw();
+      const proof = document.querySelector(".proof-card");
+      typeset([proof, document.querySelector(".setup"), document.querySelector(".legend")]);
+    }
+
+    function updateStepsUI() {
+      const items = document.querySelectorAll("#step-list li");
+      const n = items.length;
+      items.forEach((li, i) => {
+        const visible = i < stepIndex;
+        li.classList.toggle("visible", visible);
+        li.classList.toggle("current", visible && i === stepIndex - 1);
+      });
+      document.getElementById("btn-prev").disabled = stepIndex <= 0;
+      document.getElementById("btn-next").disabled = stepIndex >= n;
+      document.getElementById("step-progress").textContent =
+        stepIndex === 0
+          ? "「다음 단계」를 눌러 증명을 시작해 보세요. (" + n + "단계)"
+          : "단계 " + stepIndex + " / " + n;
+      draw();
+    }
+
+    document.querySelectorAll(".case-tabs button").forEach((btn) => {
+      btn.addEventListener("click", () => loadCase(Number(btn.dataset.case)));
+    });
+
+    document.getElementById("btn-next").addEventListener("click", () => {
+      const n = CASES[caseId].steps.length;
+      if (stepIndex < n) {
+        stepIndex++;
+        updateStepsUI();
+      }
+    });
+    document.getElementById("btn-prev").addEventListener("click", () => {
+      if (stepIndex > 0) {
+        stepIndex--;
+        updateStepsUI();
+      }
+    });
+    document.getElementById("btn-all").addEventListener("click", () => {
+      stepIndex = CASES[caseId].steps.length;
+      updateStepsUI();
+    });
+    document.getElementById("btn-reset-steps").addEventListener("click", () => {
+      stepIndex = 0;
+      updateStepsUI();
+    });
+    document.getElementById("btn-reset-view").addEventListener("click", () => {
+      yaw = 0.55;
+      pitch = 0.42;
+      scale = 78;
+      draw();
+    });
+
+    // pointer interaction
+    canvas.addEventListener("pointerdown", (e) => {
+      dragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      yaw += dx * 0.01;
+      pitch += dy * 0.008;
+      pitch = Math.max(-0.2, Math.min(1.2, pitch));
+      draw();
+    });
+    canvas.addEventListener("pointerup", () => { dragging = false; });
+    canvas.addEventListener("pointercancel", () => { dragging = false; });
+    canvas.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      scale *= e.deltaY > 0 ? 0.92 : 1.08;
+      scale = Math.max(42, Math.min(140, scale));
+      draw();
+    }, { passive: false });
+
+    window.addEventListener("resize", resizeCanvas);
+
+    function boot() {
+      loadCase(1);
+      resizeCanvas();
+    }
+    function waitMathJax() {
+      if (window.MathJax && MathJax.startup && MathJax.startup.promise) {
+        return MathJax.startup.promise.then(boot);
+      }
+      // MathJax 스크립트가 아직이면 잠시 재시도
+      let n = 0;
+      const t = setInterval(() => {
+        n++;
+        if (window.MathJax && MathJax.startup && MathJax.startup.promise) {
+          clearInterval(t);
+          MathJax.startup.promise.then(boot);
+        } else if (n > 40) {
+          clearInterval(t);
+          boot();
+        }
+      }, 50);
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", waitMathJax);
+    } else {
+      waitMathJax();
+    }
+  </script>
+</body>
+</html>

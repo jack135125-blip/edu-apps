@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>이면각 — 인터랙티브 보조자료</title>
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+      startup: { typeset: false }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+  <style>
+    :root {
+      --ink: #1a2332; --muted: #5a6577; --line: #d8dee8; --bg: #f6f4ef;
+      --card: #fff; --accent: #1e4d7b; --accent-soft: #e8f0f7;
+      --given: #1e6b4f; --given-bg: #e8f5ef;
+      --conclude: #8b3a1a; --conclude-bg: #fbf0e8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1100px 480px at 0% -10%, #e4eef6 0%, transparent 55%),
+        radial-gradient(900px 400px at 100% 0%, #efe6da 0%, transparent 50%),
+        var(--bg);
+      line-height: 1.65;
+    }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 1.5rem 1.1rem 3rem; }
+    header { margin-bottom: 1rem; padding-bottom: 0.85rem; border-bottom: 2px solid var(--accent); }
+    .eyebrow { margin: 0 0 0.25rem; color: var(--accent); font-size: 0.82rem; font-weight: 700; }
+    h1 { margin: 0 0 0.3rem; font-size: clamp(1.35rem, 3vw, 1.75rem); font-weight: 800; }
+    .meta { margin: 0; color: var(--muted); font-size: 0.92rem; }
+
+    .nav {
+      display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 1rem 0 1.1rem;
+    }
+    .nav button {
+      appearance: none; border: 1px solid #c5d6e8; background: var(--accent-soft);
+      color: var(--accent); border-radius: 999px; padding: 0.42rem 0.9rem;
+      font-size: 0.86rem; font-weight: 700; cursor: pointer; font-family: inherit;
+    }
+    .nav button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.9fr);
+      gap: 1rem;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+    .viz-card, .side-card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+      box-shadow: 0 8px 22px rgba(26, 35, 50, 0.04);
+      min-width: 0;
+      max-width: 100%;
+      position: relative;
+      z-index: 0;
+    }
+    .viz-card { overflow: hidden; }
+    .viz-toolbar {
+      display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; justify-content: space-between;
+      padding: 0.55rem 0.85rem; border-bottom: 1px solid var(--line); background: #fafbfc;
+      font-size: 0.8rem; color: var(--muted);
+    }
+    .viz-toolbar button, .ctrl button {
+      appearance: none; border: 1px solid var(--line); background: #fff; color: var(--ink);
+      border-radius: 8px; padding: 0.28rem 0.65rem; font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+    }
+    .canvas-wrap {
+      display: block;
+      width: 100%;
+      background: linear-gradient(165deg, #f8fafc 0%, #eef3f8 100%);
+      line-height: 0;
+    }
+    .canvas-wrap canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      vertical-align: top;
+      cursor: grab;
+      touch-action: none;
+    }
+    .canvas-wrap canvas:active { cursor: grabbing; }
+
+    .ctrl {
+      display: flex; flex-wrap: wrap; gap: 0.65rem 1rem; align-items: center;
+      padding: 0.55rem 0.85rem; border-top: 1px solid var(--line); font-size: 0.82rem; color: var(--muted);
+      flex-shrink: 0;
+    }
+    .ctrl label { display: inline-flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+    .ctrl input[type="range"] { width: 120px; accent-color: var(--accent); }
+    .ctrl .val { color: var(--accent); font-weight: 700; min-width: 2.2rem; }
+    .vis-bar {
+      display: flex; flex-wrap: wrap; gap: 0.35rem 0.55rem; align-items: center;
+      padding: 0.5rem 0.85rem; border-top: 1px solid var(--line); background: #f7f9fc;
+      font-size: 0.78rem; color: var(--muted);
+    }
+    .vis-bar .vis-title {
+      font-weight: 700; color: var(--accent); margin-right: 0.25rem; white-space: nowrap;
+    }
+    .vis-bar label {
+      display: inline-flex; align-items: center; gap: 0.22rem;
+      padding: 0.12rem 0.45rem; border: 1px solid var(--line); border-radius: 999px;
+      background: #fff; cursor: pointer; user-select: none; color: var(--ink);
+    }
+    .vis-bar label:has(input:not(:checked)) {
+      opacity: 0.45; background: #f0f2f5;
+    }
+    .vis-bar input { accent-color: var(--accent); }
+    .vis-bar button {
+      appearance: none; border: 1px solid #c5d6e8; background: var(--accent-soft);
+      color: var(--accent); border-radius: 8px; padding: 0.18rem 0.55rem;
+      font-size: 0.75rem; font-weight: 700; cursor: pointer; font-family: inherit;
+    }
+
+    .side-card {
+      padding: 1rem 1.1rem 1.15rem;
+      overflow: auto;
+      max-height: none;
+    }
+    .side-card mjx-container { overflow-x: auto; max-width: 100%; }
+    .side-card h2 {
+      margin: 0 0 0.55rem; font-size: 1.05rem; font-weight: 800; color: var(--accent);
+    }
+    .term-list { margin: 0; padding: 0; list-style: none; }
+    .term-list li {
+      margin: 0.45rem 0; padding: 0.55rem 0.7rem; background: #fafbfc;
+      border: 1px solid var(--line); border-radius: 10px; font-size: 0.9rem;
+    }
+    .term-list strong { color: var(--accent); }
+    .stem {
+      background: #fafbfc; border-left: 3px solid var(--accent);
+      padding: 0.65rem 0.85rem; margin: 0 0 0.7rem; border-radius: 0 8px 8px 0; font-size: 0.92rem;
+    }
+    .given-box, .conclude-box, .answer-box {
+      border-radius: 10px; padding: 0.55rem 0.75rem; margin: 0.4rem 0; font-size: 0.9rem;
+    }
+    .given-box { background: var(--given-bg); border: 1px solid #b8ddc8; color: var(--given); }
+    .conclude-box, .answer-box {
+      background: var(--conclude-bg); border: 1px solid #efd2bf; color: var(--conclude); font-weight: 700;
+    }
+    .label-tag {
+      display: inline-block; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em;
+      margin-right: 0.35rem; opacity: 0.85;
+    }
+    .steps h3 { margin: 0.85rem 0 0.45rem; font-size: 0.92rem; color: var(--accent); }
+    .step-list { list-style: none; margin: 0; padding: 0; counter-reset: step; }
+    .step-list li {
+      counter-increment: step; position: relative;
+      padding: 0.55rem 0.65rem 0.55rem 2.35rem; margin: 0.35rem 0;
+      border-radius: 10px; border: 1px solid transparent; background: #fafbfc;
+      font-size: 0.88rem; opacity: 0.32; transition: opacity 0.2s, border-color 0.2s, background 0.2s;
+    }
+    .step-list li::before {
+      content: counter(step); position: absolute; left: 0.55rem; top: 0.55rem;
+      width: 1.3rem; height: 1.3rem; border-radius: 7px; background: #d8dee8; color: #fff;
+      font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; justify-content: center;
+    }
+    .step-list li.visible { opacity: 1; border-color: var(--line); background: #fff; }
+    .step-list li.visible::before { background: var(--accent); }
+    .step-list li.current { border-color: #a8c4de; background: var(--accent-soft); }
+    .step-controls { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.7rem; }
+    .step-controls button {
+      appearance: none; border: 1px solid #c5d6e8; background: var(--accent); color: #fff;
+      border-radius: 9px; padding: 0.4rem 0.8rem; font-size: 0.84rem; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+    }
+    .step-controls button.secondary { background: #fff; color: var(--accent); }
+    .step-controls button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .step-progress { margin-top: 0.5rem; font-size: 0.8rem; color: var(--muted); }
+    .idea {
+      margin-top: 0.85rem; padding: 0.6rem 0.75rem; background: #f3f6fa;
+      border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;
+      font-size: 0.84rem; color: var(--muted);
+    }
+    .terms-block {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 0;
+    }
+    .terms-block > * {
+      position: relative;
+      z-index: 1;
+    }
+    .def-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    @media (max-width: 640px) { .def-grid { grid-template-columns: 1fr; } }
+    .def-grid > li {
+      margin: 0;
+      padding: 0.65rem 0.8rem;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 8px 22px rgba(26, 35, 50, 0.04);
+      font-size: 0.9rem;
+      overflow-wrap: anywhere;
+      word-break: keep-all;
+    }
+    .def-grid > li strong { color: var(--accent); }
+    .guide-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 0.75rem;
+    }
+    @media (max-width: 720px) { .guide-row { grid-template-columns: 1fr; } }
+    footer { margin-top: 1.5rem; text-align: center; color: var(--muted); font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <p class="eyebrow">고등학교 기하 · 공간도형</p>
+      <h1>이면각</h1>
+      <p class="meta">용어 · 정리 · 예제/문제 해법을 도형을 돌리며 따라가 보세요.</p>
+    </header>
+
+    <nav class="nav" role="tablist">
+      <button type="button" class="active" data-panel="terms">① 용어</button>
+      <button type="button" data-panel="ex3">② 예제 3 (평면의 수직)</button>
+      <button type="button" data-panel="p3">③ 문제 3 (정육면체)</button>
+      <button type="button" data-panel="p4">④ 문제 4</button>
+    </nav>
+
+    <!-- ===== 용어 ===== -->
+    <section class="panel active" id="panel-terms">
+      <div class="terms-block">
+        <ul class="def-grid">
+          <li><strong>반평면</strong> — 한 평면 위의 한 직선이 그 평면을 두 부분으로 나눌 때, 각각의 부분</li>
+          <li><strong>이면각</strong> — 한 직선 $l$을 공유하는 두 반평면 $\alpha$, $\beta$로 이루어진 도형</li>
+          <li><strong>이면각의 변</strong> — 두 반평면의 공통인 직선 $l$</li>
+          <li><strong>이면각의 면</strong> — 두 반평면 $\alpha$, $\beta$</li>
+          <li><strong>이면각의 크기</strong> — 변 $l$ 위의 점 $O$에서 $OA \perp l$ (면 $\alpha$), $OB \perp l$ (면 $\beta$)인 반직선에 대해 $\angle AOB$의 크기 ($O$의 위치에 무관)</li>
+          <li><strong>두 평면이 이루는 각</strong> — 두 평면이 만날 때 생기는 이면각 중 $90^\circ$ 이하인 것. 이 각이 $90^\circ$이면 $\alpha \perp \beta$</li>
+        </ul>
+
+        <section class="viz-card">
+          <div class="viz-toolbar">
+            <span>점 <strong>O</strong>를 끌어 이동 · 빈 곳을 끌어 회전 · 슬라이더로 각 크기 조절</span>
+            <button type="button" data-reset="terms">시점 초기화</button>
+          </div>
+          <div class="canvas-wrap"><canvas id="cv-terms" width="720" height="480"></canvas></div>
+          <div class="vis-bar" id="terms-vis" aria-label="개체 표시">
+            <span class="vis-title">표시</span>
+            <label><input type="checkbox" data-vis="alpha" checked /> $\alpha$</label>
+            <label><input type="checkbox" data-vis="beta" checked /> $\beta$</label>
+            <label><input type="checkbox" data-vis="ell" checked /> $l$</label>
+            <label><input type="checkbox" data-vis="O" checked /> $O$</label>
+            <label><input type="checkbox" data-vis="A" checked /> $A$</label>
+            <label><input type="checkbox" data-vis="B" checked /> $B$</label>
+            <label><input type="checkbox" data-vis="OA" checked /> $OA$</label>
+            <label><input type="checkbox" data-vis="OB" checked /> $OB$</label>
+            <label><input type="checkbox" data-vis="right" checked /> 직각</label>
+            <label><input type="checkbox" data-vis="arc" checked /> $\angle AOB$</label>
+            <button type="button" id="btn-vis-all">모두</button>
+            <button type="button" id="btn-vis-none">숨김</button>
+          </div>
+          <div class="ctrl">
+            <label>이면각 크기
+              <input type="range" id="ang-slider" min="20" max="160" value="55" />
+              <span class="val" id="ang-val">55°</span>
+            </label>
+            <label><input type="checkbox" id="chk-perp" /> $90^\circ$로 고정 ($\alpha \perp \beta$)</label>
+          </div>
+        </section>
+
+        <div class="guide-row">
+          <aside class="side-card">
+            <h2>이면각의 크기 읽기</h2>
+            <div class="idea" style="margin-top:0">
+              점 $O$를 변 $l$ 위로 옮겨 보세요. $A$, $B$도 함께 움직이지만
+              <strong>$\angle AOB$의 크기는 변하지 않습니다.</strong>
+              (이면각의 크기는 $O$의 위치에 무관)
+            </div>
+          </aside>
+          <aside class="side-card">
+            <ul class="term-list">
+              <li>분홍 면: 반평면 $\alpha$ · 보라 면: 반평면 $\beta$</li>
+              <li>점선: 이면각의 변 $l$ · 점 $O$는 변 $l$ 위에서 이동</li>
+              <li>직각 표시: $OA \perp l$, $OB \perp l$</li>
+              <li>호: $\angle AOB$ (이면각의 크기)</li>
+            </ul>
+            <div class="answer-box" id="terms-angle-box">
+              <span class="label-tag">측정</span>$\angle AOB = 55^\circ$ (O의 위치와 무관)
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 예제 3 ===== -->
+    <section class="panel" id="panel-ex3">
+      <div class="layout">
+        <section class="viz-card">
+          <div class="viz-toolbar">
+            <span>드래그로 회전 · 단계에 따라 수선 $n$과 직각이 나타남</span>
+            <button type="button" data-reset="ex3">시점 초기화</button>
+          </div>
+          <div class="canvas-wrap"><canvas id="cv-ex3" width="720" height="480"></canvas></div>
+        </section>
+        <aside class="side-card">
+          <h2>예제 3 · 두 평면이 수직임을 보이기</h2>
+          <div class="stem">
+            직선 $l$이 평면 $\alpha$에 수직일 때, 직선 $l$을 포함하는 임의의 평면 $\beta$는 평면 $\alpha$와 수직임을 보이시오.
+          </div>
+          <div class="given-box"><span class="label-tag">가정</span>$l \perp \alpha$, $l \subset \beta$</div>
+          <div class="conclude-box"><span class="label-tag">결론</span>$\alpha \perp \beta$</div>
+          <div class="steps">
+            <h3>증명 따라가기</h3>
+            <ol class="step-list" id="steps-ex3"></ol>
+            <div class="step-controls" data-steps="ex3">
+              <button type="button" class="secondary" data-act="prev">이전</button>
+              <button type="button" data-act="next">다음 단계</button>
+              <button type="button" class="secondary" data-act="all">전체 보기</button>
+              <button type="button" class="secondary" data-act="reset">처음으로</button>
+            </div>
+            <p class="step-progress" id="prog-ex3"></p>
+          </div>
+          <div class="idea">핵심: $\angle(\alpha,\beta)=\angle(l,n)$이고, $l \perp n$이면 $\alpha \perp \beta$.</div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ===== 문제 3 ===== -->
+    <section class="panel" id="panel-p3">
+      <div class="layout">
+        <section class="viz-card">
+          <div class="viz-toolbar">
+            <span>정육면체를 돌리며 두 평면과 $\angle BAF$를 확인</span>
+            <button type="button" data-reset="p3">시점 초기화</button>
+          </div>
+          <div class="canvas-wrap"><canvas id="cv-p3" width="720" height="480"></canvas></div>
+        </section>
+        <aside class="side-card">
+          <h2>문제 3 · 정육면체</h2>
+          <div class="stem">
+            오른쪽 그림과 같은 정육면체에서 두 평면 $ABCD$와 $AFGD$가 이루는 각의 크기를 구하시오.
+          </div>
+          <div class="steps">
+            <h3>해법 따라가기</h3>
+            <ol class="step-list" id="steps-p3"></ol>
+            <div class="step-controls" data-steps="p3">
+              <button type="button" class="secondary" data-act="prev">이전</button>
+              <button type="button" data-act="next">다음 단계</button>
+              <button type="button" class="secondary" data-act="all">전체 보기</button>
+              <button type="button" class="secondary" data-act="reset">처음으로</button>
+            </div>
+            <p class="step-progress" id="prog-p3"></p>
+          </div>
+          <div class="answer-box" id="ans-p3" style="display:none">
+            <span class="label-tag">정답</span>$45^\circ$
+          </div>
+          <div class="idea">교선 $AD$에 각각 수직인 $AB$, $AF$를 잡아 이면각을 $\angle BAF$로 바꿉니다.</div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ===== 문제 4 ===== -->
+    <section class="panel" id="panel-p4">
+      <div class="layout">
+        <section class="viz-card">
+          <div class="viz-toolbar">
+            <span>드래그로 회전 · $\alpha \perp \beta$와 $\overline{AO}$의 관계</span>
+            <button type="button" data-reset="p4">시점 초기화</button>
+          </div>
+          <div class="canvas-wrap"><canvas id="cv-p4" width="720" height="480"></canvas></div>
+        </section>
+        <aside class="side-card">
+          <h2>문제 4</h2>
+          <div class="stem">
+            두 평면 $\alpha$, $\beta$가 서로 수직이고, 평면 $\beta$ 위의 한 점 $A$에서 두 평면의 교선에 내린 수선의 발을 $O$라 할 때,
+            $\overline{AO} \perp \alpha$임을 보이시오.
+          </div>
+          <div class="given-box"><span class="label-tag">가정</span>$\alpha \perp \beta$, $A \in \beta$, $\overline{AO} \perp$ (교선)</div>
+          <div class="conclude-box"><span class="label-tag">결론</span>$\overline{AO} \perp \alpha$</div>
+          <div class="steps">
+            <h3>증명 따라가기</h3>
+            <ol class="step-list" id="steps-p4"></ol>
+            <div class="step-controls" data-steps="p4">
+              <button type="button" class="secondary" data-act="prev">이전</button>
+              <button type="button" data-act="next">다음 단계</button>
+              <button type="button" class="secondary" data-act="all">전체 보기</button>
+              <button type="button" class="secondary" data-act="reset">처음으로</button>
+            </div>
+            <p class="step-progress" id="prog-p4"></p>
+          </div>
+          <div class="idea">직선이 평면 위의 서로 평행하지 않은 두 직선에 모두 수직이면, 그 평면에 수직입니다.</div>
+        </aside>
+      </div>
+    </section>
+
+    <footer>이면각 수업 보조자료 · 도형을 돌리며 교선에 수직인 반직선으로 각을 읽어 보세요.</footer>
+  </div>
+
+  <script>
+    const STEPS = {
+      ex3: [
+        "직선 $l$과 평면 $\\alpha$의 교점을 $O$, 두 평면 $\\alpha$, $\\beta$의 교선을 $m$이라 하자.",
+        "점 $O$를 지나고 $m$에 수직인 직선 $n$을 평면 $\\alpha$ 위에 긋자. ($n \\perp m$)",
+        "$l \\perp \\alpha$, $m \\subset \\alpha \\Rightarrow l \\perp m$. $l \\subset \\beta$, $n \\perp m$이므로 $\\angle(\\alpha,\\beta) = \\angle(l,n)$.",
+        "$l \\perp \\alpha$, $n \\subset \\alpha \\Rightarrow l \\perp n$. $\\therefore \\angle(\\alpha,\\beta) = 90^\\circ$, $\\alpha \\perp \\beta$."
+      ],
+      p3: [
+        "두 평면 $ABCD$와 $AFGD$의 교선은 직선 $AD$이다.",
+        "점 $A$에서 교선 $AD$에 수직인 반직선을 각 평면 위에서 잡는다.",
+        "평면 $ABCD$에서 $\\overline{AB} \\perp \\overline{AD}$이다. (정사각형의 이웃한 변)",
+        "평면 $AFGD$에서 $\\overline{AF} \\perp \\overline{AD}$이다. ($AD \\perp$ 평면 $ABFE$이므로 그 위의 직선 $AF$와도 수직)",
+        "따라서 두 평면이 이루는 각은 $\\angle BAF$이다.",
+        "정사각형 $ABFE$에서 $\\triangle ABF$는 직각이등변삼각형이므로 $\\angle BAF = 45^\\circ$이다."
+      ],
+      p4: [
+        "두 평면 $\\alpha$, $\\beta$의 교선을 $m$이라 하고, 점 $O$를 지나 $m \\perp n$인 직선 $n$을 평면 $\\alpha$ 위에 긋자. ($\\overline{AO} \\perp m$) $\\Rightarrow \\angle(\\alpha,\\beta) = \\angle(AO,n)$",
+        "$\\alpha \\perp \\beta$이므로 $\\overline{AO} \\perp n$.",
+        "$\\overline{AO} \\perp m$, $\\overline{AO} \\perp n$ ($m$, $n$은 평행하지 않음) $\\Rightarrow \\overline{AO} \\perp \\alpha$."
+      ]
+    };
+
+    // ---------- shared 3D helpers ----------
+    function makeView(canvas, opt) {
+      const state = {
+        canvas,
+        ctx: canvas.getContext("2d"),
+        yaw: opt.yaw ?? 0.7,
+        pitch: opt.pitch ?? 0.45,
+        scale: opt.scale ?? 70,
+        dragging: false,
+        dragKind: null,
+        lastX: 0, lastY: 0,
+        draw: opt.draw
+      };
+
+      function logicalSize() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.max(1, canvas.width / dpr);
+        const h = Math.max(1, canvas.height / dpr);
+        return { w, h, dpr };
+      }
+
+      function pointerToCanvas(e) {
+        const rect = canvas.getBoundingClientRect();
+        const { w, h } = logicalSize();
+        return {
+          mx: (e.clientX - rect.left) * (w / Math.max(1, rect.width)),
+          my: (e.clientY - rect.top) * (h / Math.max(1, rect.height))
+        };
+      }
+
+      function resize() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const wrap = canvas.parentElement;
+        const w = Math.max(1, (wrap && wrap.clientWidth) || 720);
+        const h = Math.round(w * 2 / 3);
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+        canvas.style.width = "100%";
+        canvas.style.height = "auto";
+        state.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        paint();
+      }
+
+      function rot(p) {
+        const cy = Math.cos(state.yaw), sy = Math.sin(state.yaw);
+        const cp = Math.cos(state.pitch), sp = Math.sin(state.pitch);
+        let x = p.x * cy - p.y * sy;
+        let y = p.x * sy + p.y * cy;
+        let z = p.z;
+        return { x, y: y * cp - z * sp, z: y * sp + z * cp };
+      }
+
+      function project(p) {
+        const r = rot(p);
+        const { w, h } = logicalSize();
+        return {
+          x: w / 2 + r.x * state.scale,
+          y: h * 0.58 - r.z * state.scale - r.y * state.scale * 0.12,
+          depth: r.y
+        };
+      }
+
+      function paint() {
+        const { w, h } = logicalSize();
+        state.ctx.clearRect(0, 0, w, h);
+        state.draw({ ctx: state.ctx, project, w, h, state });
+      }
+
+      canvas.addEventListener("pointerdown", (e) => {
+        const { mx, my } = pointerToCanvas(e);
+        const hit = opt.pick ? opt.pick({ mx, my, project, state }) : null;
+        state.dragKind = hit || "orbit";
+        state.dragging = true;
+        state.lastX = e.clientX;
+        state.lastY = e.clientY;
+        canvas.setPointerCapture(e.pointerId);
+        if (state.dragKind !== "orbit") canvas.style.cursor = "grabbing";
+      });
+      canvas.addEventListener("pointermove", (e) => {
+        if (!state.dragging) {
+          if (opt.pick) {
+            const { mx, my } = pointerToCanvas(e);
+            canvas.style.cursor = opt.pick({ mx, my, project, state }) ? "grab" : "grab";
+          }
+          return;
+        }
+        if (state.dragKind === "orbit") {
+          state.yaw += (e.clientX - state.lastX) * 0.01;
+          state.pitch += (e.clientY - state.lastY) * 0.008;
+          state.pitch = Math.max(-0.25, Math.min(1.25, state.pitch));
+        } else if (opt.onDrag) {
+          opt.onDrag(state.dragKind, e, { project, logicalSize, pointerToCanvas, canvas });
+        }
+        state.lastX = e.clientX;
+        state.lastY = e.clientY;
+        paint();
+      });
+      canvas.addEventListener("pointerup", () => {
+        state.dragging = false;
+        state.dragKind = null;
+        canvas.style.cursor = "grab";
+      });
+      canvas.addEventListener("pointercancel", () => {
+        state.dragging = false;
+        state.dragKind = null;
+      });
+      canvas.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        state.scale *= e.deltaY > 0 ? 0.92 : 1.08;
+        state.scale = Math.max(36, Math.min(130, state.scale));
+        paint();
+      }, { passive: false });
+
+      state.resize = resize;
+      state.paint = paint;
+      state.project = project;
+      state.reset = () => {
+        state.yaw = opt.yaw ?? 0.7;
+        state.pitch = opt.pitch ?? 0.45;
+        state.scale = opt.scale ?? 70;
+        if (opt.onReset) opt.onReset();
+        paint();
+      };
+
+      if (typeof ResizeObserver !== "undefined") {
+        const ro = new ResizeObserver(() => resize());
+        ro.observe(canvas.parentElement || canvas);
+      }
+
+      return state;
+    }
+
+    function poly(ctx, pts, fill, stroke, lw) {
+      if (!pts.length) return;
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.closePath();
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 1.5; ctx.stroke(); }
+    }
+
+    function seg(ctx, a, b, color, lw, dash) {
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = color; ctx.lineWidth = lw || 2;
+      ctx.setLineDash(dash || []); ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    function point(ctx, p, label, ox, oy) {
+      ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = "#1a2332"; ctx.fill();
+      ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.4; ctx.stroke();
+      ctx.fillStyle = "#1a2332";
+      ctx.font = "700 13px 'Pretendard', 'Malgun Gothic', sans-serif";
+      ctx.fillText(label, p.x + (ox ?? 7), p.y + (oy ?? -8));
+    }
+
+    function rightAngle(ctx, project, origin, dirA, dirB, color, size) {
+      const s = size || 0.28;
+      const len = (v) => Math.hypot(v.x, v.y, v.z) || 1;
+      const a = { x: dirA.x / len(dirA) * s, y: dirA.y / len(dirA) * s, z: dirA.z / len(dirA) * s };
+      const b = { x: dirB.x / len(dirB) * s, y: dirB.y / len(dirB) * s, z: dirB.z / len(dirB) * s };
+      const p1 = project({ x: origin.x + a.x, y: origin.y + a.y, z: origin.z + a.z });
+      const p2 = project({ x: origin.x + a.x + b.x, y: origin.y + a.y + b.y, z: origin.z + a.z + b.z });
+      const p3 = project({ x: origin.x + b.x, y: origin.y + b.y, z: origin.z + b.z });
+      ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.lineTo(p3.x, p3.y);
+      ctx.strokeStyle = color || "#e85d75"; ctx.lineWidth = 2; ctx.stroke();
+    }
+
+    // 각호를 OA·OB가 만드는 3D 평면 위에 그려 회전과 함께 움직이게 함
+    function arcAngle(ctx, project, O, A, B, color, radius) {
+      const va = { x: A.x - O.x, y: A.y - O.y, z: A.z - O.z };
+      const vb = { x: B.x - O.x, y: B.y - O.y, z: B.z - O.z };
+      const la = Math.hypot(va.x, va.y, va.z) || 1;
+      const lb = Math.hypot(vb.x, vb.y, vb.z) || 1;
+      const ua = { x: va.x / la, y: va.y / la, z: va.z / la };
+      const ub = { x: vb.x / lb, y: vb.y / lb, z: vb.z / lb };
+      const dot = Math.max(-1, Math.min(1, ua.x * ub.x + ua.y * ub.y + ua.z * ub.z));
+      const ang = Math.acos(dot);
+      let wx = ub.x - dot * ua.x, wy = ub.y - dot * ua.y, wz = ub.z - dot * ua.z;
+      const wl = Math.hypot(wx, wy, wz);
+      if (wl < 1e-8) return;
+      wx /= wl; wy /= wl; wz /= wl;
+      const r = radius || 0.55;
+      const n = 28;
+      ctx.beginPath();
+      for (let i = 0; i <= n; i++) {
+        const t = (i / n) * ang;
+        const c = Math.cos(t), s = Math.sin(t);
+        const q = project({
+          x: O.x + r * (c * ua.x + s * wx),
+          y: O.y + r * (c * ua.y + s * wy),
+          z: O.z + r * (c * ua.z + s * wz)
+        });
+        if (i === 0) ctx.moveTo(q.x, q.y);
+        else ctx.lineTo(q.x, q.y);
+      }
+      ctx.strokeStyle = color || "#c0392b";
+      ctx.lineWidth = 2.6;
+      ctx.lineCap = "round";
+      ctx.stroke();
+    }
+
+    // ---------- TERMS scene ----------
+    let dihedralDeg = 55;
+    let oY = 0; // 점 O의 변 l(y축) 위 위치
+    const O_Y_MIN = -2.0, O_Y_MAX = 2.0;
+    const RAY_LEN = 2.0;
+    const termsVis = {
+      alpha: true, beta: true, ell: true,
+      O: true, A: true, B: true,
+      OA: true, OB: true, right: true, arc: true
+    };
+
+    function termsGeometry() {
+      const th = dihedralDeg * Math.PI / 180;
+      const ux = Math.cos(th), uz = Math.sin(th);
+      const O = { x: 0, y: oY, z: 0 };
+      const A = { x: RAY_LEN * ux, y: oY, z: RAY_LEN * uz };
+      const B = { x: RAY_LEN, y: oY, z: 0 };
+      return { th, ux, uz, O, A, B };
+    }
+
+    const viewTerms = makeView(document.getElementById("cv-terms"), {
+      yaw: 0.55, pitch: 0.4, scale: 78,
+      pick({ mx, my, project }) {
+        if (!termsVis.O) return null;
+        const { O } = termsGeometry();
+        const p = project(O);
+        return Math.hypot(mx - p.x, my - p.y) <= 18 ? "O" : null;
+      },
+      onDrag(kind, e, helpers) {
+        if (kind !== "O") return;
+        const { mx, my } = helpers.pointerToCanvas(e);
+        const p1 = helpers.project({ x: 0, y: O_Y_MIN, z: 0 });
+        const p2 = helpers.project({ x: 0, y: O_Y_MAX, z: 0 });
+        const vx = p2.x - p1.x, vy = p2.y - p1.y;
+        const den = vx * vx + vy * vy;
+        let t = den < 1e-8 ? 0.5 : ((mx - p1.x) * vx + (my - p1.y) * vy) / den;
+        t = Math.max(0, Math.min(1, t));
+        oY = O_Y_MIN + t * (O_Y_MAX - O_Y_MIN);
+      },
+      onReset() { oY = 0; },
+      draw({ ctx, project }) {
+        const { ux, uz, O, A, B } = termsGeometry();
+        const L1 = { x: 0, y: -2.6, z: 0 }, L2 = { x: 0, y: 2.6, z: 0 };
+        const v = termsVis;
+
+        if (v.beta) {
+          poly(ctx, [
+            { x: 0, y: -2.2, z: 0 }, { x: 2.8, y: -2.2, z: 0 },
+            { x: 2.8, y: 2.2, z: 0 }, { x: 0, y: 2.2, z: 0 }
+          ].map(project), "rgba(160, 150, 210, 0.38)", "rgba(100, 90, 160, 0.5)", 1.5);
+          const bLab = project({ x: 2.0, y: -1.8, z: 0 });
+          ctx.fillStyle = "#5a4a9a";
+          ctx.font = "italic 700 16px 'Times New Roman', serif";
+          ctx.fillText("β", bLab.x, bLab.y);
+        }
+        if (v.alpha) {
+          poly(ctx, [
+            { x: 0, y: -2.2, z: 0 },
+            { x: 2.8 * ux, y: -2.2, z: 2.8 * uz },
+            { x: 2.8 * ux, y: 2.2, z: 2.8 * uz },
+            { x: 0, y: 2.2, z: 0 }
+          ].map(project), "rgba(230, 170, 180, 0.4)", "rgba(180, 90, 110, 0.5)", 1.5);
+          const aLab = project({ x: 2.2 * ux * 0.7, y: -1.8, z: 2.2 * uz * 0.7 });
+          ctx.fillStyle = "#a04560";
+          ctx.font = "italic 700 16px 'Times New Roman', serif";
+          ctx.fillText("α", aLab.x, aLab.y);
+        }
+
+        if (v.ell) {
+          seg(ctx, project(L1), project(L2), "#2c3e50", 2.2, [6, 5]);
+          const lLab = project({ x: 0, y: 2.35, z: 0 });
+          ctx.fillStyle = "#2c3e50";
+          ctx.font = "italic 700 15px 'Times New Roman', serif";
+          ctx.fillText("l", lLab.x + 6, lLab.y - 2);
+        }
+
+        if (v.OA) seg(ctx, project(O), project(A), "#1e6b4f", 3);
+        if (v.OB) seg(ctx, project(O), project(B), "#1e6b4f", 3);
+
+        if (v.right) {
+          if (v.OA || v.ell) rightAngle(ctx, project, O, { x: ux, y: 0, z: uz }, { x: 0, y: 1, z: 0 }, "#e85d75", 0.32);
+          if (v.OB || v.ell) rightAngle(ctx, project, O, { x: 1, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }, "#e85d75", 0.32);
+        }
+        if (v.arc) arcAngle(ctx, project, O, A, B, "#c0392b");
+
+        if (v.O) {
+          const Op = project(O);
+          ctx.beginPath();
+          ctx.arc(Op.x, Op.y, 11, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(30, 77, 123, 0.18)";
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(Op.x, Op.y, 5.5, 0, Math.PI * 2);
+          ctx.fillStyle = "#1e4d7b";
+          ctx.fill();
+          ctx.strokeStyle = "#fff";
+          ctx.lineWidth = 1.6;
+          ctx.stroke();
+          ctx.fillStyle = "#1e4d7b";
+          ctx.font = "700 13px 'Pretendard', 'Malgun Gothic', sans-serif";
+          ctx.fillText("O", Op.x - 14, Op.y + 18);
+        }
+        if (v.A) point(ctx, project(A), "A", 8, -10);
+        if (v.B) point(ctx, project(B), "B", 8, 14);
+      }
+    });
+
+    // 용어 개체 표시 토글
+    document.querySelectorAll("#terms-vis input[data-vis]").forEach((inp) => {
+      inp.addEventListener("change", () => {
+        termsVis[inp.dataset.vis] = inp.checked;
+        viewTerms.paint();
+      });
+    });
+    function setAllTermsVis(on) {
+      Object.keys(termsVis).forEach((k) => { termsVis[k] = on; });
+      document.querySelectorAll("#terms-vis input[data-vis]").forEach((inp) => {
+        inp.checked = on;
+      });
+      viewTerms.paint();
+    }
+    document.getElementById("btn-vis-all").addEventListener("click", () => setAllTermsVis(true));
+    document.getElementById("btn-vis-none").addEventListener("click", () => setAllTermsVis(false));
+
+    // ---------- EX3 scene ----------
+    let stepEx3 = 0;
+    const viewEx3 = makeView(document.getElementById("cv-ex3"), {
+      yaw: 0.65, pitch: 0.42, scale: 72,
+      draw({ ctx, project }) {
+        const O = { x: 0, y: 0, z: 0 };
+        const alpha = [
+          { x: -2.4, y: -2.4, z: 0 }, { x: 2.8, y: -2.4, z: 0 },
+          { x: 2.8, y: 2.4, z: 0 }, { x: -2.4, y: 2.4, z: 0 }
+        ].map(project);
+        const beta = [
+          { x: -0.1, y: -2.3, z: 0 }, { x: -0.1, y: 2.3, z: 0 },
+          { x: -0.1, y: 2.3, z: 2.6 }, { x: -0.1, y: -2.3, z: 2.6 }
+        ].map(project);
+        // m = intersection = y-axis through O on alpha∩beta, approx x=0 line on plane
+        // Actually beta is yz plane at x=0; m is y-axis
+        const M1 = { x: 0, y: -2.5, z: 0 }, M2 = { x: 0, y: 2.5, z: 0 };
+        const Ltop = { x: 0, y: 0, z: 2.5 }; // l vertical
+        const N = { x: 2.2, y: 0, z: 0 }; // n on alpha ⊥ m
+
+        poly(ctx, alpha, "rgba(150, 130, 200, 0.35)", "rgba(100, 80, 160, 0.5)", 1.5);
+        poly(ctx, beta, "rgba(140, 200, 150, 0.35)", "rgba(60, 140, 80, 0.5)", 1.5);
+
+        seg(ctx, project(M1), project(M2), "#2c3e50", 2.2, [6, 5]);
+        ctx.fillStyle = "#2c3e50";
+        ctx.font = "italic 700 14px 'Times New Roman', serif";
+        const mLab = project({ x: 0, y: 2.3, z: 0 });
+        ctx.fillText("m", mLab.x + 8, mLab.y);
+
+        const aLab = project({ x: 2.2, y: 2.0, z: 0 });
+        const bLab = project({ x: 0, y: 2.0, z: 2.2 });
+        ctx.fillStyle = "#5a4a9a"; ctx.fillText("α", aLab.x, aLab.y);
+        ctx.fillStyle = "#2d6b45"; ctx.fillText("β", bLab.x, bLab.y);
+
+        // l always shown
+        seg(ctx, project(O), project(Ltop), "#1e6b4f", 3.2);
+        rightAngle(ctx, project, O, { x: 0, y: 0, z: 1 }, { x: 0, y: 1, z: 0 }, "#e85d75", 0.3);
+        point(ctx, project(Ltop), "l", 8, -6);
+
+        if (stepEx3 >= 2) {
+          seg(ctx, project(O), project(N), "#1e4d7b", 3);
+          rightAngle(ctx, project, O, { x: 1, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }, "#e85d75", 0.3);
+          point(ctx, project(N), "n", 8, 14);
+        }
+        if (stepEx3 >= 4) {
+          rightAngle(ctx, project, O, { x: 0, y: 0, z: 1 }, { x: 1, y: 0, z: 0 }, "#c0392b", 0.34);
+        }
+        point(ctx, project(O), "O", -14, 16);
+      }
+    });
+
+    // ---------- P3 cube ----------
+    let stepP3 = 0;
+    const cube = (() => {
+      // A top-front-left etc matching textbook-ish: A(0,0,2), B(2,0,2), C(2,2,2), D(0,2,2), E(0,0,0), F(2,0,0), G(2,2,0), H(0,2,0)
+      const A = { x: 0, y: 0, z: 2 }, B = { x: 2, y: 0, z: 2 }, C = { x: 2, y: 2, z: 2 }, D = { x: 0, y: 2, z: 2 };
+      const E = { x: 0, y: 0, z: 0 }, F = { x: 2, y: 0, z: 0 }, G = { x: 2, y: 2, z: 0 }, H = { x: 0, y: 2, z: 0 };
+      return { A, B, C, D, E, F, G, H };
+    })();
+
+    const viewP3 = makeView(document.getElementById("cv-p3"), {
+      yaw: 0.85, pitch: 0.48, scale: 68,
+      draw({ ctx, project }) {
+        const { A, B, C, D, E, F, G, H } = cube;
+        const edges = [
+          [A, B], [B, C], [C, D], [D, A],
+          [E, F], [F, G], [G, H], [H, E],
+          [A, E], [B, F], [C, G], [D, H]
+        ];
+        const hidden = new Set(["DH", "HE", "HG", "EH", "HD", "GH"]);
+        function edgeKey(p, q) {
+          const names = { A, B, C, D, E, F, G, H };
+          let n1 = "?", n2 = "?";
+          for (const [k, v] of Object.entries(names)) {
+            if (v === p) n1 = k;
+            if (v === q) n2 = k;
+          }
+          return n1 + n2;
+        }
+
+        // faces — 처음부터 연하게, 단계 후 강조
+        const topFill = stepP3 >= 1 ? "rgba(120, 200, 220, 0.42)" : "rgba(120, 200, 220, 0.18)";
+        const cutFill = stepP3 >= 1 ? "rgba(40, 140, 150, 0.45)" : "rgba(40, 140, 150, 0.2)";
+        poly(ctx, [A, B, C, D].map(project), topFill, "rgba(40, 130, 160, 0.55)", 1.5);
+        poly(ctx, [A, F, G, D].map(project), cutFill, "rgba(20, 100, 110, 0.6)", 1.8);
+
+        edges.forEach(([p, q]) => {
+          const k = edgeKey(p, q);
+          const dash = (k === "DH" || k === "HD" || k === "HE" || k === "EH" || k === "HG" || k === "GH") ? [5, 4] : [];
+          seg(ctx, project(p), project(q), "#2c3e50", 1.8, dash);
+        });
+
+        // highlight AD always after step1
+        if (stepP3 >= 1) seg(ctx, project(A), project(D), "#c0392b", 3.2);
+
+        if (stepP3 >= 3) {
+          seg(ctx, project(A), project(B), "#1e6b4f", 3.5);
+          rightAngle(ctx, project, A, { x: 1, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }, "#e85d75", 0.28);
+        }
+        if (stepP3 >= 4) {
+          seg(ctx, project(A), project(F), "#1e6b4f", 3.5);
+          // AD ⊥ AF: AD=(0,1,0), AF=(1,0,-1) - show right angle in plane ABFE-ish
+          rightAngle(ctx, project, A, { x: 1, y: 0, z: -1 }, { x: 0, y: 1, z: 0 }, "#e85d75", 0.28);
+        }
+        if (stepP3 >= 5) {
+          arcAngle(ctx, project, A, B, F, "#c0392b");
+        }
+
+        const labels = [
+          [A, "A", -14, -8], [B, "B", 8, -8], [C, "C", 8, -8], [D, "D", -14, -8],
+          [E, "E", -14, 14], [F, "F", 8, 14], [G, "G", 8, 14], [H, "H", -14, 14]
+        ];
+        labels.forEach(([p, lab, ox, oy]) => point(ctx, project(p), lab, ox, oy));
+      }
+    });
+
+    // ---------- P4 scene ----------
+    let stepP4 = 0;
+    const viewP4 = makeView(document.getElementById("cv-p4"), {
+      yaw: 0.6, pitch: 0.4, scale: 74,
+      draw({ ctx, project }) {
+        const O = { x: 0, y: 0, z: 0 };
+        const A = { x: 0, y: 0, z: 2.2 };
+        const alpha = [
+          { x: -2.5, y: -2.3, z: 0 }, { x: 2.6, y: -2.3, z: 0 },
+          { x: 2.6, y: 2.3, z: 0 }, { x: -2.5, y: 2.3, z: 0 }
+        ].map(project);
+        const beta = [
+          { x: -0.05, y: -2.2, z: 0 }, { x: -0.05, y: 2.2, z: 0 },
+          { x: -0.05, y: 2.2, z: 2.5 }, { x: -0.05, y: -2.2, z: 2.5 }
+        ].map(project);
+        const M1 = { x: 0, y: -2.4, z: 0 }, M2 = { x: 0, y: 2.4, z: 0 };
+        const N = { x: 2.3, y: 0, z: 0 };
+
+        poly(ctx, alpha, "rgba(196, 168, 130, 0.38)", "rgba(140, 110, 70, 0.5)", 1.5);
+        poly(ctx, beta, "rgba(230, 210, 120, 0.4)", "rgba(160, 140, 40, 0.55)", 1.5);
+
+        seg(ctx, project(M1), project(M2), "#2c3e50", 2.2);
+        const mLab = project({ x: 0, y: 2.25, z: 0 });
+        ctx.fillStyle = "#2c3e50";
+        ctx.font = "italic 700 15px 'Times New Roman', serif";
+        ctx.fillText("m", mLab.x + 8, mLab.y - 2);
+
+        seg(ctx, project(A), project(O), stepP4 >= 3 ? "#c0392b" : "#1e6b4f", 3.2);
+        rightAngle(ctx, project, O, { x: 0, y: 0, z: 1 }, { x: 0, y: 1, z: 0 }, "#e85d75", 0.3);
+
+        if (stepP4 >= 1) {
+          seg(ctx, project(O), project(N), "#1e4d7b", 2.8);
+          rightAngle(ctx, project, O, { x: 1, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }, "#e85d75", 0.28);
+          point(ctx, project(N), "n", 8, 14);
+        }
+        if (stepP4 >= 2) {
+          rightAngle(ctx, project, O, { x: 0, y: 0, z: 1 }, { x: 1, y: 0, z: 0 }, "#c0392b", 0.34);
+        }
+
+        const aLab = project({ x: 2.2, y: 2.0, z: 0 });
+        const bLab = project({ x: 0, y: 2.0, z: 2.2 });
+        ctx.fillStyle = "#7a6348";
+        ctx.font = "italic 700 16px 'Times New Roman', serif";
+        ctx.fillText("α", aLab.x, aLab.y);
+        ctx.fillStyle = "#8a7a20"; ctx.fillText("β", bLab.x, bLab.y);
+
+        point(ctx, project(O), "O", -14, 16);
+        point(ctx, project(A), "A", 8, -10);
+      }
+    });
+
+    const views = { terms: viewTerms, ex3: viewEx3, p3: viewP3, p4: viewP4 };
+
+    // ---------- steps UI ----------
+    const stepState = { ex3: 0, p3: 0, p4: 0 };
+
+    function typeset(el) {
+      if (window.MathJax && MathJax.typesetPromise) {
+        try { if (MathJax.typesetClear) MathJax.typesetClear(el ? [el] : undefined); } catch (_) {}
+        return MathJax.typesetPromise(el ? [el] : undefined).catch(() => {});
+      }
+      return Promise.resolve();
+    }
+
+    function fillSteps(key) {
+      const ol = document.getElementById("steps-" + key);
+      ol.innerHTML = STEPS[key].map((s) => `<li>${s}</li>`).join("");
+    }
+
+    function updateSteps(key) {
+      const n = STEPS[key].length;
+      const idx = stepState[key];
+      document.querySelectorAll("#steps-" + key + " li").forEach((li, i) => {
+        const vis = i < idx;
+        li.classList.toggle("visible", vis);
+        li.classList.toggle("current", vis && i === idx - 1);
+      });
+      const box = document.querySelector(`.step-controls[data-steps="${key}"]`);
+      box.querySelector('[data-act="prev"]').disabled = idx <= 0;
+      box.querySelector('[data-act="next"]').disabled = idx >= n;
+      document.getElementById("prog-" + key).textContent =
+        idx === 0 ? `「다음 단계」를 눌러 시작해 보세요. (${n}단계)` : `단계 ${idx} / ${n}`;
+
+      if (key === "ex3") { stepEx3 = idx; viewEx3.paint(); }
+      if (key === "p3") {
+        stepP3 = idx; viewP3.paint();
+        document.getElementById("ans-p3").style.display = idx >= n ? "block" : "none";
+      }
+      if (key === "p4") { stepP4 = idx; viewP4.paint(); }
+    }
+
+    ["ex3", "p3", "p4"].forEach(fillSteps);
+
+    document.querySelectorAll(".step-controls").forEach((box) => {
+      const key = box.dataset.steps;
+      box.addEventListener("click", (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        const n = STEPS[key].length;
+        const act = btn.dataset.act;
+        if (act === "next" && stepState[key] < n) stepState[key]++;
+        if (act === "prev" && stepState[key] > 0) stepState[key]--;
+        if (act === "all") stepState[key] = n;
+        if (act === "reset") stepState[key] = 0;
+        updateSteps(key);
+      });
+    });
+
+    // nav
+    document.querySelectorAll(".nav button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".nav button").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+        const panel = document.getElementById("panel-" + btn.dataset.panel);
+        panel.classList.add("active");
+        const key = btn.dataset.panel;
+        requestAnimationFrame(() => {
+          if (views[key]) { views[key].resize(); views[key].paint(); }
+        });
+        typeset(panel);
+      });
+    });
+
+    document.querySelectorAll("[data-reset]").forEach((btn) => {
+      btn.addEventListener("click", () => views[btn.dataset.reset].reset());
+    });
+
+    // angle slider
+    const slider = document.getElementById("ang-slider");
+    const angVal = document.getElementById("ang-val");
+    const chkPerp = document.getElementById("chk-perp");
+    const termsBox = document.getElementById("terms-angle-box");
+
+    function syncAngle() {
+      if (chkPerp.checked) {
+        dihedralDeg = 90;
+        slider.value = 90;
+        slider.disabled = true;
+      } else {
+        slider.disabled = false;
+        dihedralDeg = Number(slider.value);
+      }
+      angVal.textContent = dihedralDeg + "°";
+      termsBox.innerHTML = `<span class="label-tag">측정</span>$\\angle AOB = ${dihedralDeg}^\\circ$`
+        + (dihedralDeg === 90 ? " → $\\alpha \\perp \\beta$" : "")
+        + `<br><span style="font-weight:600;color:var(--muted);font-size:0.84rem">O를 움직여도 각의 크기는 같습니다.</span>`;
+      viewTerms.paint();
+      typeset(termsBox);
+    }
+    slider.addEventListener("input", syncAngle);
+    chkPerp.addEventListener("change", syncAngle);
+
+    function boot() {
+      ["ex3", "p3", "p4"].forEach(updateSteps);
+      Object.values(views).forEach((v) => v.resize());
+      syncAngle();
+      typeset(document.body);
+    }
+    window.addEventListener("resize", () => {
+      Object.values(views).forEach((v) => { if (v.canvas.offsetParent !== null) v.resize(); });
+    });
+
+    function waitMJ() {
+      if (window.MathJax && MathJax.startup && MathJax.startup.promise) {
+        MathJax.startup.promise.then(boot);
+      } else {
+        let n = 0;
+        const t = setInterval(() => {
+          n++;
+          if (window.MathJax && MathJax.startup && MathJax.startup.promise) {
+            clearInterval(t); MathJax.startup.promise.then(boot);
+          } else if (n > 40) { clearInterval(t); boot(); }
+        }, 50);
+      }
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", waitMJ);
+    else waitMJ();
+  </script>
+</body>
+</html>
