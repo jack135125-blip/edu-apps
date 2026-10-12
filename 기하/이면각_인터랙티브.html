@@ -31,6 +31,14 @@
     }
     .wrap { max-width: 1120px; margin: 0 auto; padding: 1.5rem 1.1rem 3rem; }
     header { margin-bottom: 1rem; padding-bottom: 0.85rem; border-bottom: 2px solid var(--accent); }
+    .back-home {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      margin: 0 0 0.65rem; padding: 0.32rem 0.75rem;
+      text-decoration: none; color: var(--accent); background: var(--accent-soft);
+      border: 1px solid #c5d6e8; border-radius: 999px;
+      font-size: 0.82rem; font-weight: 700;
+    }
+    .back-home:hover { background: #d6e6f4; }
     .eyebrow { margin: 0 0 0.25rem; color: var(--accent); font-size: 0.82rem; font-weight: 700; }
     h1 { margin: 0 0 0.3rem; font-size: clamp(1.35rem, 3vw, 1.75rem); font-weight: 800; }
     .meta { margin: 0; color: var(--muted); font-size: 0.92rem; }
@@ -226,6 +234,7 @@
 <body>
   <div class="wrap">
     <header>
+      <a class="back-home" href="./index.html">← 기하 목록으로</a>
       <p class="eyebrow">고등학교 기하 · 공간도형</p>
       <h1>이면각</h1>
       <p class="meta">용어 · 정리 · 예제/문제 해법을 도형을 돌리며 따라가 보세요.</p>
