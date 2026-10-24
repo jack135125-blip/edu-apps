@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f8fb">
+  <meta name="description" content="좌표공간에서 선분의 내분점을 직접 움직이고 계산하며 확인하는 고등학교 기하 탐구 도구">
+  <title>좌표공간 선분의 내분점 실험실</title>
+  <style>
+:root{font-family:"Pretendard","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;color:#18273a;background:#f5f7fb;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0}button,input{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible{outline:3px solid #8bc6ff;outline-offset:2px}[hidden]{display:none!important}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.app-shell{min-height:100vh;max-width:1600px;margin:auto}.app-header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:19px clamp(18px,3vw,46px);background:#fff;border-bottom:1px solid #dbe3ee}.brand{display:flex;align-items:center;gap:12px;min-width:0}.brand-mark{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:#176bc6;color:#fff;font-size:24px;font-family:Georgia,serif;font-style:italic;font-weight:700}.brand strong{display:block;font-size:19px;letter-spacing:-.04em}.brand small{display:block;color:#6d7b8e;font-size:12px;margin-top:2px}.mode-nav{display:flex;gap:5px;padding:4px;background:#edf2f8;border-radius:12px}.mode-button{border:0;background:transparent;color:#607086;padding:10px 16px;border-radius:9px;font-weight:700;white-space:nowrap}.mode-button.active{color:#173d6d;background:#fff;box-shadow:0 2px 6px #233e6614}
+main{padding:30px clamp(18px,3vw,46px) 26px}.section-heading{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:20px}.eyebrow{color:#1266bd;font-size:13px;font-weight:800;letter-spacing:.05em}.section-heading h1{margin:4px 0 0;font-size:clamp(24px,2.3vw,34px);letter-spacing:-.05em}.section-heading p{margin:0 0 3px;color:#69788b;font-size:14px}.panel{background:#fff;border:1px solid #dce4ef;border-radius:18px;box-shadow:0 8px 26px #213b5910}.explore-grid{display:grid;grid-template-columns:minmax(240px,285px) minmax(360px,1fr) minmax(255px,305px);gap:16px;align-items:stretch}.input-panel,.result-panel,.manipulate-side{padding:20px}.panel-title,.plot-header{display:flex;align-items:start;justify-content:space-between;gap:10px}.panel h2{margin:0;font-size:17px;letter-spacing:-.03em}.mini-label{font-size:11px;color:#8291a2;background:#f2f5f9;padding:5px 8px;border-radius:999px;white-space:nowrap}.coord-set{border:0;padding:0;margin:20px 0 0}.coord-set legend{padding:0;font-weight:800;font-size:14px}.point-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px}.point-a{background:#ed873f}.point-b{background:#247cd2}.coord-fields{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px}.coord-fields label,.ratio-fields label{font-size:12px;color:#6b7b90;font-weight:700}.coord-fields input,.ratio-fields input,.challenge-answer input{width:100%;margin-top:5px;border:1px solid #cfdae7;border-radius:9px;background:#f9fbfe;color:#162940;padding:9px 8px;text-align:center;font-size:15px}.coord-fields input:invalid,.ratio-fields input:invalid{border-color:#d76363;background:#fff6f5}.rule{height:1px;background:#e2e9f1;margin:21px 0}.ratio-label,.slider-labels{display:flex;align-items:center;justify-content:space-between;gap:8px}.ratio-label strong{font-size:14px}.ratio-label>span,.slider-labels span{font-size:11px;color:#8291a2}.math-inline{font-family:Georgia,serif;font-style:italic}.ratio-fields{display:flex;align-items:end;justify-content:center;gap:10px;margin-top:8px}.ratio-fields label{width:70px}.ratio-fields>span{font-size:22px;font-weight:600;margin-bottom:8px}.preset-row{display:flex;gap:7px;margin-top:21px;flex-wrap:wrap}.quiet-button,.plane-button,.icon-button{border:1px solid #d9e2ed;background:#fff;color:#435a74;border-radius:9px;padding:8px 10px;font-size:12px;font-weight:700}.quiet-button:hover,.plane-button:hover,.icon-button:hover{background:#f0f6fd}.input-message{margin:14px 0 0;color:#b24545;font-size:12px}
+.plot-panel,.large-plot-panel{padding:17px 18px 12px;display:flex;flex-direction:column}.plot-header p{margin:4px 0 0;color:#8694a4;font-size:12px}.icon-button{font-size:20px;line-height:1;width:32px;height:32px;padding:3px}.canvas-wrap{position:relative;flex:1;min-height:345px;display:flex;align-items:stretch;justify-content:center;overflow:hidden}.canvas-wrap canvas{display:block;width:100%;height:100%;touch-action:none}.canvas-wrap.large{min-height:440px}.plane-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap;border-top:1px solid #e5ebf3;padding-top:11px}.plane-controls>span{color:#8291a2;font-size:12px;font-weight:700;margin-right:3px}.plane-button.active{background:#e7f3ff;border-color:#9fccf5;color:#125fae}.result-intro{color:#5f7084;font-size:13px;line-height:1.55;margin:18px 0}.result-intro strong{color:#146fbf}.result-highlight{background:#eaf5ff;border-radius:14px;padding:16px;margin-bottom:18px}.result-highlight span{display:block;color:#3975aa;font-size:12px;font-weight:800;margin-bottom:4px}.result-highlight strong{font-size:25px;color:#1266bc;letter-spacing:-.025em;white-space:nowrap}.step-list{display:grid;gap:9px}.step{display:flex;align-items:start;gap:9px}.step>span{display:grid;place-items:center;min-width:21px;height:21px;border-radius:50%;background:#e5f4ef;color:#168462;font-size:12px;font-weight:800}.step p{margin:0;color:#5e6c7e;font-size:12px;line-height:1.5}.general-formula{margin:18px 0 12px;color:#315e95;font-family:Georgia,"Malgun Gothic",serif;font-size:14px;line-height:1.7}.formula-group{white-space:nowrap}.fraction{display:inline-flex;flex-direction:column;vertical-align:middle;line-height:1.1;text-align:center;font-family:Georgia,"Malgun Gothic",serif}.fraction>span:first-child{border-bottom:1px solid currentColor;padding:0 3px 2px}.fraction>span:last-child{padding:2px 3px 0}.coordinate-steps{border-top:1px solid #e6ecf3;padding-top:10px}.coordinate-steps div{font-size:12px;color:#586b81;margin:7px 0;white-space:nowrap}.coordinate-steps strong{color:#176bc6}
+.manipulate-grid{display:grid;grid-template-columns:minmax(390px,1fr) 290px;gap:16px}.large-plot-panel{min-height:550px}.manipulate-side h3{font-size:14px;margin:0 0 12px}.slider-labels{margin:25px 0 12px}.slider-labels strong{font-size:20px;color:#146dbf}input[type=range]{width:100%;accent-color:#168c6a}.detail-pair{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:19px 0;color:#718196;font-size:13px}.detail-pair strong{color:#1a334e;font-size:16px}.stacked-buttons{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.support-text{color:#8998a8;font-size:12px;line-height:1.5;margin-top:25px}
+.challenge-layout{display:grid;grid-template-columns:minmax(380px,1fr) minmax(350px,.88fr);gap:16px}.challenge-card,.challenge-visual{padding:25px;min-height:440px}.challenge-top{display:flex;align-items:center;justify-content:space-between}.challenge-counter{color:#176ec3;font-weight:800;font-size:13px}.challenge-question{font-size:23px;line-height:1.65;letter-spacing:-.03em;margin:30px 0 25px;word-break:keep-all}.challenge-answer{display:flex;align-items:center;gap:7px;font-size:22px;font-family:Georgia,"Malgun Gothic",serif}.challenge-answer label{width:74px}.challenge-answer input{font-family:inherit;font-size:20px}.challenge-answer input.correct{border-color:#29a679;background:#eaf8f2}.challenge-answer input.incorrect{border-color:#dd7770;background:#fff2f1}.challenge-actions{display:flex;gap:9px;margin-top:25px}.primary-button{border:1px solid #176bc6;background:#176bc6;color:#fff;border-radius:9px;padding:10px 18px;font-weight:800;font-size:14px}.primary-button:hover{background:#105bac}.challenge-feedback{min-height:25px;margin:17px 0 0;font-size:14px;font-weight:700;color:#186a51}.challenge-feedback.error{color:#b94947}.hint-box{margin-top:18px;padding:12px 14px;border-radius:10px;background:#fff9e9;color:#765920;font-size:14px;line-height:1.6}.challenge-visual h2{margin:0}.challenge-visual>p{margin:6px 0 0;color:#7d8c9d;font-size:13px}.challenge-visual .canvas-wrap{min-height:305px}.challenge-solution{font-size:14px;color:#336697;padding:8px 0;font-weight:700}footer{text-align:center;color:#94a0ad;font-size:11px;padding:12px 20px 25px}
+@media(max-width:1200px){.explore-grid{grid-template-columns:minmax(220px,280px) minmax(350px,1fr)}.result-panel{grid-column:1/-1}.coordinate-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.result-highlight{max-width:300px}.challenge-layout{grid-template-columns:1fr 1fr}}
+@media(max-width:800px){.app-header{align-items:stretch;flex-direction:column;padding:15px 16px}.mode-nav{width:100%}.mode-button{flex:1;padding:9px 6px;font-size:13px}main{padding:20px 14px}.section-heading{display:block}.section-heading p{margin-top:8px}.explore-grid,.manipulate-grid,.challenge-layout{grid-template-columns:1fr}.result-panel{grid-column:auto}.input-panel{order:1}.plot-panel{order:2}.result-panel{order:3}.canvas-wrap{min-height:310px}.canvas-wrap.large{min-height:345px}.large-plot-panel{min-height:450px}.challenge-card,.challenge-visual{min-height:auto}.challenge-question{font-size:20px}.coordinate-steps{display:block}}
+@media(max-width:420px){.brand strong{font-size:17px}.brand small{font-size:11px}.section-heading h1{font-size:24px}.panel{border-radius:14px}.input-panel,.result-panel,.manipulate-side,.challenge-card,.challenge-visual{padding:17px}.canvas-wrap{min-height:260px}.canvas-wrap.large{min-height:290px}.challenge-answer{gap:4px}.challenge-answer label{width:55px}.challenge-answer input{font-size:17px;padding:8px 3px}.coordinate-steps div{white-space:normal}}
+
+</style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand"><span class="brand-mark">P</span><div><strong>공간 내분점 실험실</strong><small>좌표를 바꾸고, 움직이고, 예측해 보세요</small></div></div>
+      <nav class="mode-nav" aria-label="학습 모드">
+        <button type="button" class="mode-button active" data-mode="explore" aria-current="page">탐색</button>
+        <button type="button" class="mode-button" data-mode="manipulate">직접 조작</button>
+        <button type="button" class="mode-button" data-mode="challenge">도전 문제</button>
+      </nav>
+    </header>
+
+    <main>
+      <section id="explore" class="mode-panel" aria-labelledby="explore-title">
+        <div class="section-heading"><div><span class="eyebrow">탐색 모드</span><h1 id="explore-title">좌표와 그림을 함께 살펴보기</h1></div><p>AP : PB = m : n일 때 점 P의 위치를 확인합니다.</p></div>
+        <div class="explore-grid">
+          <aside class="panel input-panel">
+            <div class="panel-title"><h2>좌표와 내분비</h2><span class="mini-label">−10 ~ 10</span></div>
+            <fieldset class="coord-set"><legend><span class="point-dot point-a"></span>점 A</legend><div class="coord-fields"><label>x<input id="ax" type="number" min="-10" max="10" step="0.5" value="1" inputmode="decimal"></label><label>y<input id="ay" type="number" min="-10" max="10" step="0.5" value="2" inputmode="decimal"></label><label>z<input id="az" type="number" min="-10" max="10" step="0.5" value="1" inputmode="decimal"></label></div></fieldset>
+            <fieldset class="coord-set"><legend><span class="point-dot point-b"></span>점 B</legend><div class="coord-fields"><label>x<input id="bx" type="number" min="-10" max="10" step="0.5" value="5" inputmode="decimal"></label><label>y<input id="by" type="number" min="-10" max="10" step="0.5" value="4" inputmode="decimal"></label><label>z<input id="bz" type="number" min="-10" max="10" step="0.5" value="5" inputmode="decimal"></label></div></fieldset>
+            <div class="rule"></div>
+            <div class="ratio-label"><strong>내분비 <span class="math-inline">AP : PB</span></strong><span>m, n &gt; 0</span></div>
+            <div class="ratio-fields"><label>m<input id="ratio-m" type="number" min="1" max="40" step="1" value="1" inputmode="numeric"></label><span>:</span><label>n<input id="ratio-n" type="number" min="1" max="40" step="1" value="3" inputmode="numeric"></label></div>
+            <div class="preset-row"><button type="button" class="quiet-button" id="preset-midpoint">중점 1 : 1</button><button type="button" class="quiet-button" id="preset-textbook">교과서 예시</button></div>
+            <p id="input-message" class="input-message" role="alert" hidden></p>
+          </aside>
+
+          <div class="panel plot-panel">
+            <div class="plot-header"><div><h2>좌표공간</h2><p>빈 공간을 드래그하면 시점이 회전합니다.</p></div><button type="button" class="icon-button" data-reset-view title="시점 초기화" aria-label="시점 초기화">↺</button></div>
+            <div class="canvas-wrap"><canvas id="explore-canvas" aria-label="좌표공간의 두 점 A, B와 내분점 P를 나타낸 그림"></canvas></div>
+            <div class="plane-controls" role="group" aria-label="정사영 평면"><span>정사영</span><button type="button" class="plane-button active" data-plane="xy">xy평면</button><button type="button" class="plane-button" data-plane="yz">yz평면</button><button type="button" class="plane-button" data-plane="xz">xz평면</button><button type="button" class="plane-button" data-plane="none">끄기</button></div>
+          </div>
+
+          <aside class="panel result-panel" aria-live="polite"><div class="panel-title"><h2>계산과 연결</h2><span class="mini-label">실시간 갱신</span></div><div class="result-intro">P는 A에서 B까지 <strong id="fraction-progress">1/4</strong>만큼 이동한 점입니다.</div><div class="result-highlight"><span>내분점 P</span><strong id="point-result">(2, 5/2, 2)</strong></div><div class="step-list"><div class="step"><span>1</span><p>정사영해도 선분의 내분비는 같습니다.</p></div><div class="step"><span>2</span><p>각 좌표에 같은 내분점 공식을 적용합니다.</p></div></div><div class="general-formula">P = <span class="formula-group">(<span class="fraction"><span>nx₁ + mx₂</span><span>m + n</span></span>, <span class="fraction"><span>ny₁ + my₂</span><span>m + n</span></span>, <span class="fraction"><span>nz₁ + mz₂</span><span>m + n</span></span>)</span></div><div id="coordinate-steps" class="coordinate-steps"></div></aside>
+        </div>
+      </section>
+
+      <section id="manipulate" class="mode-panel" aria-labelledby="manipulate-title" hidden>
+        <div class="section-heading"><div><span class="eyebrow">직접 조작</span><h1 id="manipulate-title">선분 위의 P를 움직여 보기</h1></div><p>초록색 P를 드래그하거나 아래 슬라이더를 움직이세요.</p></div>
+        <div class="manipulate-grid"><div class="panel large-plot-panel"><div class="plot-header"><div><h2>AP : PB = <span id="drag-ratio">1 : 3</span></h2><p>점 P를 드래그 · 빈 공간을 드래그해 시점 회전</p></div><button type="button" class="icon-button" data-reset-view title="시점 초기화" aria-label="시점 초기화">↺</button></div><div class="canvas-wrap large"><canvas id="manipulate-canvas" aria-label="마우스나 손가락으로 내분점 P를 움직일 수 있는 좌표공간 그림"></canvas></div></div><aside class="panel manipulate-side"><h2>선분 위 위치</h2><div class="slider-labels"><span>A에 가까움</span><strong id="position-percent">25%</strong><span>B에 가까움</span></div><input id="position-slider" type="range" min="1" max="39" value="10" aria-label="점 P의 선분 위 위치"><div class="detail-pair"><span>내분비</span><strong id="manipulate-ratio">1 : 3</strong></div><div class="detail-pair"><span>P의 좌표</span><strong id="manipulate-point">(2, 5/2, 2)</strong></div><div class="rule"></div><h3>정사영 비교</h3><div class="stacked-buttons" role="group" aria-label="정사영 평면"><button type="button" class="plane-button active" data-plane="xy">xy평면</button><button type="button" class="plane-button" data-plane="yz">yz평면</button><button type="button" class="plane-button" data-plane="xz">xz평면</button><button type="button" class="plane-button" data-plane="none">끄기</button></div><p class="support-text">점 A, B의 좌표는 탐색 화면에서 바꿀 수 있습니다.</p></aside></div>
+      </section>
+
+      <section id="challenge" class="mode-panel" aria-labelledby="challenge-title" hidden>
+        <div class="section-heading"><div><span class="eyebrow">도전 문제</span><h1 id="challenge-title">그림을 보기 전에 좌표 예측하기</h1></div><p>정수, 소수 또는 5/2 같은 분수로 입력할 수 있습니다.</p></div>
+        <div class="challenge-layout"><div class="panel challenge-card"><div class="challenge-top"><span class="challenge-counter" id="challenge-count">문제 1 / 5</span><button type="button" class="quiet-button" id="new-problem">다음 문제 →</button></div><p class="challenge-question" id="challenge-question"></p><div class="challenge-answer"><span>P = (</span><label><span class="sr-only">P의 x좌표</span><input id="guess-x" type="text" inputmode="decimal" autocomplete="off" placeholder="x"></label><span>,</span><label><span class="sr-only">P의 y좌표</span><input id="guess-y" type="text" inputmode="decimal" autocomplete="off" placeholder="y"></label><span>,</span><label><span class="sr-only">P의 z좌표</span><input id="guess-z" type="text" inputmode="decimal" autocomplete="off" placeholder="z"></label><span>)</span></div><div class="challenge-actions"><button type="button" class="primary-button" id="check-answer">답 확인</button><button type="button" class="quiet-button" id="show-hint">힌트 보기</button></div><div id="hint-box" class="hint-box" hidden></div><p id="challenge-feedback" class="challenge-feedback" aria-live="polite"></p></div><div class="panel challenge-visual"><h2>확인 그림</h2><p id="challenge-visual-message">답을 확인하면 점 P가 나타납니다.</p><div class="canvas-wrap"><canvas id="challenge-canvas" aria-label="도전 문제의 좌표공간 그림"></canvas></div><div id="challenge-solution" class="challenge-solution" hidden></div></div></div>
+      </section>
+    </main>
+    <footer>좌표공간에서 선분 AB를 m : n으로 내분하는 점 · 브라우저에서 바로 사용</footer>
+  </div>
+<script>
+(() => {
+  'use strict';
+
+  const state = { A:[1,2,1], B:[5,4,5], m:1, n:3, plane:'xy', yaw:2.22, elevation:0.72, mode:'explore' };
+  const defaults = { yaw:2.22, elevation:0.72 };
+  const fields = ['ax','ay','az','bx','by','bz','ratio-m','ratio-n'].map(id => document.getElementById(id));
+  const canvases = {
+    explore:document.getElementById('explore-canvas'),
+    manipulate:document.getElementById('manipulate-canvas'),
+    challenge:document.getElementById('challenge-canvas')
+  };
+  const challenges = [
+    {A:[1,2,1],B:[5,4,5],m:1,n:3},
+    {A:[0,3,-4],B:[6,-3,5],m:2,n:1},
+    {A:[4,1,2],B:[-1,6,-3],m:3,n:2},
+    {A:[-2,4,0],B:[6,-4,8],m:1,n:1},
+    {A:[1,-2,5],B:[7,4,-1],m:2,n:1}
+  ];
+  let challengeIndex=0, hintLevel=0, challengeRevealed=false;
+
+  const $ = id => document.getElementById(id);
+  const clamp = (v,min,max) => Math.max(min,Math.min(max,v));
+  const gcd = (a,b) => b ? gcd(b,a%b) : Math.abs(a);
+  const internalPoint = (A,B,m,n) => A.map((a,i) => (n*a+m*B[i])/(m+n));
+  const approxEqual = (a,b) => Math.abs(a-b)<1e-7;
+  function formatted(value) {
+    if (Math.abs(value)<1e-10) return '0';
+    if (approxEqual(value,Math.round(value))) return String(Math.round(value));
+    for(let d=2;d<=100;d++) {
+      const u=Math.round(value*d);
+      if(approxEqual(value,u/d)) { const g=gcd(Math.abs(u),d); return `${u/g}/${d/g}`; }
+    }
+    return Number(value.toFixed(3)).toString();
+  }
+  const pointText = p => `(${p.map(formatted).join(', ')})`;
+  const vectorText = p => `(${p.map(formatted).join(', ')})`;
+  function setRatioFromStep(step) {
+    step=clamp(Math.round(step),1,39);
+    const g=gcd(step,40-step);
+    state.m=step/g; state.n=(40-step)/g;
+    $('ratio-m').value=state.m; $('ratio-n').value=state.n;
+    render();
+  }
+  function syncSlider() { $('position-slider').value=clamp(Math.round(40*state.m/(state.m+state.n)),1,39); }
+
+  function readInputs() {
+    const raw=fields.map(f=>Number(f.value));
+    const validCoords=fields.slice(0,6).every((f,i)=>f.value.trim()!=='' && Number.isFinite(raw[i]) && raw[i]>=-10 && raw[i]<=10);
+    const validRatio=fields.slice(6).every((f,i)=>f.value.trim()!=='' && Number.isInteger(raw[i+6]) && raw[i+6]>=1 && raw[i+6]<=40);
+    const message=$('input-message');
+    if(!validCoords||!validRatio) {
+      message.textContent=validCoords?'m과 n은 1~40의 자연수로 입력해 주세요.':'각 좌표는 −10부터 10 사이의 수로 입력해 주세요.';
+      message.hidden=false;
+      return;
+    }
+    message.hidden=true;
+    state.A=raw.slice(0,3); state.B=raw.slice(3,6); state.m=raw[6]; state.n=raw[7];
+    syncSlider(); render();
+  }
+  fields.forEach(field=>field.addEventListener('input',readInputs));
+  $('preset-midpoint').addEventListener('click',()=>{state.m=1;state.n=1;$('ratio-m').value=1;$('ratio-n').value=1;syncSlider();render();});
+  $('preset-textbook').addEventListener('click',()=>{state.A=[0,3,-4];state.B=[6,-3,5];state.m=2;state.n=1;fields.slice(0,6).forEach((f,i)=>{f.value=i<3?state.A[i]:state.B[i-3]});$('ratio-m').value=2;$('ratio-n').value=1;syncSlider();render();});
+  $('position-slider').addEventListener('input',e=>setRatioFromStep(Number(e.target.value)));
+
+  document.querySelectorAll('.mode-button').forEach(button=>button.addEventListener('click',()=>{
+    state.mode=button.dataset.mode;
+    document.querySelectorAll('.mode-button').forEach(b=>{const active=b===button;b.classList.toggle('active',active);b.setAttribute('aria-current',active?'page':'false')});
+    document.querySelectorAll('.mode-panel').forEach(panel=>{panel.hidden=panel.id!==state.mode});
+    requestAnimationFrame(render);
+  }));
+  document.querySelectorAll('.plane-button').forEach(button=>button.addEventListener('click',()=>{state.plane=button.dataset.plane;document.querySelectorAll('.plane-button').forEach(b=>b.classList.toggle('active',b.dataset.plane===state.plane));render()}));
+  document.querySelectorAll('[data-reset-view]').forEach(button=>button.addEventListener('click',()=>{state.yaw=defaults.yaw;state.elevation=defaults.elevation;render()}));
+
+  function updateText() {
+    const P=internalPoint(state.A,state.B,state.m,state.n);
+    $('fraction-progress').textContent=formatted(state.m/(state.m+state.n));
+    $('point-result').textContent=pointText(P);
+    $('drag-ratio').textContent=`${state.m} : ${state.n}`;
+    $('manipulate-ratio').textContent=`${state.m} : ${state.n}`;
+    $('manipulate-point').textContent=pointText(P);
+    $('position-percent').textContent=`${Math.round(100*state.m/(state.m+state.n))}%`;
+    const labels=['x','y','z'];
+    $('coordinate-steps').innerHTML=labels.map((label,i)=>`<div><strong>${label}</strong> = (${formatted(state.n)}×${formatted(state.A[i])} + ${formatted(state.m)}×${formatted(state.B[i])}) ÷ ${formatted(state.m+state.n)} = <strong>${formatted(P[i])}</strong></div>`).join('');
+  }
+
+  function setupCanvas(canvas) {
+    const w=canvas.clientWidth,h=canvas.clientHeight;
+    if(w<2||h<2)return null;
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+    const realW=Math.round(w*dpr),realH=Math.round(h*dpr);
+    if(canvas.width!==realW||canvas.height!==realH){canvas.width=realW;canvas.height=realH;}
+    const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+    return {ctx,w,h};
+  }
+  function makeProjector(w,h,A,B,P) {
+    const L=clamp(Math.ceil(Math.max(4,...A.map(Math.abs),...B.map(Math.abs)))+1,5,12);
+    const e=state.elevation,y=state.yaw;
+    const raw=point=>({x:Math.cos(y)*point[0]+Math.sin(y)*point[1],y:-(-Math.sin(e)*Math.sin(y)*point[0]+Math.sin(e)*Math.cos(y)*point[1]+Math.cos(e)*point[2])});
+    const sample=[[0,0,0],A,B,P,[L,0,0],[0,L,0],[0,0,L],[-L*.35,0,0],[0,-L*.35,0],[-L*.35,-L*.35,0],[L,-L*.35,0],[L,L,0],[-L*.35,L,0]].map(raw);
+    const xs=sample.map(v=>v.x),ys=sample.map(v=>v.y);
+    const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+    const scale=Math.min((w-86)/(maxX-minX||1),(h-70)/(maxY-minY||1));
+    const centerX=(minX+maxX)/2,centerY=(minY+maxY)/2;
+    const project=point=>{const q=raw(point);return {x:w/2+(q.x-centerX)*scale,y:h/2+(q.y-centerY)*scale}};
+    return {project,L};
+  }
+  function line(ctx,a,b,color,width=1,dash=[]) {ctx.save();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.restore();}
+  function dot(ctx,point,color,r=6){ctx.beginPath();ctx.arc(point.x,point.y,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();}
+  function label(ctx,text,point,dx,dy,color='#24364a'){ctx.font='700 13px "Malgun Gothic",system-ui,sans-serif';ctx.fillStyle=color;ctx.fillText(text,point.x+dx,point.y+dy);}
+  function arrow(ctx,a,b,color){line(ctx,a,b,color,1.8);const angle=Math.atan2(b.y-a.y,b.x-a.x);const len=8;ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x-len*Math.cos(angle-.42),b.y-len*Math.sin(angle-.42));ctx.lineTo(b.x-len*Math.cos(angle+.42),b.y-len*Math.sin(angle+.42));ctx.closePath();ctx.fill();}
+  function projectedToPlane(point,plane){return plane==='xy'?[point[0],point[1],0]:plane==='yz'?[0,point[1],point[2]]:[point[0],0,point[2]];}
+  function drawScene(canvas,A,B,m,n,{showP=true,showProjection=true}={}){
+    const surface=setupCanvas(canvas);if(!surface)return null;
+    const {ctx,w,h}=surface,P=internalPoint(A,B,m,n),{project,L}=makeProjector(w,h,A,B,P);
+    const O=project([0,0,0]), Ap=project(A),Bp=project(B),Pp=project(P);
+    ctx.lineJoin='round';ctx.lineCap='round';
+    if(showProjection&&state.plane!=='none'){
+      const plane=state.plane;
+      const extent=[-L*.35,L];
+      const corners=plane==='xy'?[[extent[0],extent[0],0],[extent[1],extent[0],0],[extent[1],extent[1],0],[extent[0],extent[1],0]]:plane==='yz'?[[0,extent[0],extent[0]],[0,extent[1],extent[0]],[0,extent[1],extent[1]],[0,extent[0],extent[1]]]:[[extent[0],0,extent[0]],[extent[1],0,extent[0]],[extent[1],0,extent[1]],[extent[0],0,extent[1]]];
+      ctx.beginPath();corners.map(project).forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.closePath();ctx.fillStyle='rgba(48,144,209,.075)';ctx.fill();ctx.strokeStyle='rgba(77,140,184,.22)';ctx.lineWidth=1;ctx.stroke();
+      for(const v of [A,B,...(showP?[P]:[])])line(ctx,project(v),project(projectedToPlane(v,plane)),'#a8b5c4',1.25,[5,5]);
+      for(const v of [A,B,...(showP?[P]:[])])dot(ctx,project(projectedToPlane(v,plane)),'#a7bfd0',3.5);
+      const caption=plane==='xy'?'xy평면':plane==='yz'?'yz평면':'xz평면';label(ctx,caption,project(corners[2]),6,-8,'#6595b8');
+    }
+    arrow(ctx,O,project([L,0,0]),'#73859a');arrow(ctx,O,project([0,L,0]),'#73859a');arrow(ctx,O,project([0,0,L]),'#73859a');
+    label(ctx,'O',O,-16,16);label(ctx,'x',project([L,0,0]),6,3);label(ctx,'y',project([0,L,0]),7,3);label(ctx,'z',project([0,0,L]),5,-6);
+    line(ctx,Ap,Bp,'#277bd0',3.5);
+    dot(ctx,Ap,'#e9893f',7);dot(ctx,Bp,'#247bd0',7);
+    label(ctx,`A ${vectorText(A)}`,Ap,-4,-14);label(ctx,`B ${vectorText(B)}`,Bp,8,-10);
+    if(showP){dot(ctx,Pp,'#168d69',8);label(ctx,`P ${vectorText(P)}`,Pp,10,20,'#117a5b');}
+    return {Ap,Bp,Pp,P};
+  }
+
+  const pointerState=new WeakMap();
+  function wireCanvas(canvas,allowMoveP) {
+    canvas.addEventListener('pointerdown',event=>{
+      const rect=canvas.getBoundingClientRect(),x=event.clientX-rect.left,y=event.clientY-rect.top;
+      const geometry=drawScene(canvas,state.A,state.B,state.m,state.n);
+      const nearP=allowMoveP&&geometry&&Math.hypot(x-geometry.Pp.x,y-geometry.Pp.y)<24;
+      pointerState.set(canvas,{kind:nearP?'point':'orbit',x,y,startYaw:state.yaw,startElevation:state.elevation});
+      canvas.setPointerCapture(event.pointerId);
+    });
+    canvas.addEventListener('pointermove',event=>{
+      const active=pointerState.get(canvas);if(!active)return;
+      const rect=canvas.getBoundingClientRect(),x=event.clientX-rect.left,y=event.clientY-rect.top;
+      if(active.kind==='point'){
+        const g=drawScene(canvas,state.A,state.B,state.m,state.n);if(!g)return;
+        const vx=g.Bp.x-g.Ap.x,vy=g.Bp.y-g.Ap.y,den=vx*vx+vy*vy;
+        if(den>1){const t=clamp(((x-g.Ap.x)*vx+(y-g.Ap.y)*vy)/den,.025,.975);setRatioFromStep(t*40);}
+      } else {state.yaw=active.startYaw+(x-active.x)*.008;state.elevation=clamp(active.startElevation-(y-active.y)*.006,.18,1.32);render();}
+    });
+    const stop=()=>pointerState.delete(canvas);canvas.addEventListener('pointerup',stop);canvas.addEventListener('pointercancel',stop);canvas.addEventListener('lostpointercapture',stop);
+  }
+  wireCanvas(canvases.explore,false);wireCanvas(canvases.manipulate,true);
+
+  function parseGuess(value){const t=value.trim().replaceAll('−','-');if(/^[-+]?\d+(?:\.\d+)?\s*\/\s*[-+]?\d+(?:\.\d+)?$/.test(t)){const [a,b]=t.split('/').map(Number);return b===0?NaN:a/b;}if(/^[-+]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(t))return Number(t);return NaN;}
+  function currentChallenge(){return challenges[challengeIndex];}
+  function showChallenge(){
+    const q=currentChallenge();$('challenge-count').textContent=`문제 ${challengeIndex+1} / ${challenges.length}`;
+    $('challenge-question').innerHTML=`두 점 <strong>A${pointText(q.A)}</strong>, <strong>B${pointText(q.B)}</strong>를 잇는 선분을 <strong>${q.m} : ${q.n}</strong>으로 내분하는 점 P의 좌표는?`;
+    ['guess-x','guess-y','guess-z'].forEach(id=>{const f=$(id);f.value='';f.classList.remove('correct','incorrect')});
+    hintLevel=0;challengeRevealed=false;$('hint-box').hidden=true;$('hint-box').textContent='';$('challenge-feedback').textContent='';$('challenge-feedback').classList.remove('error');$('challenge-solution').hidden=true;$('challenge-visual-message').textContent='답을 확인하면 점 P가 나타납니다.';
+    requestAnimationFrame(render);
+  }
+  $('new-problem').addEventListener('click',()=>{challengeIndex=(challengeIndex+1)%challenges.length;showChallenge()});
+  $('show-hint').addEventListener('click',()=>{
+    const q=currentChallenge(),P=internalPoint(q.A,q.B,q.m,q.n);hintLevel=Math.min(3,hintLevel+1);
+    const hints=[`P는 A에서 B까지 ${formatted(q.m/(q.m+q.n))}만큼 이동합니다.`,`각 좌표에 P = (n×A + m×B) ÷ (m+n)을 적용해 보세요.`,`x좌표부터 계산해 보면 ${formatted(P[0])}입니다.`];
+    $('hint-box').textContent=hints[hintLevel-1];$('hint-box').hidden=false;
+  });
+  $('check-answer').addEventListener('click',()=>{
+    const q=currentChallenge(),P=internalPoint(q.A,q.B,q.m,q.n),inputs=['guess-x','guess-y','guess-z'].map($),values=inputs.map(f=>parseGuess(f.value));
+    if(values.some(v=>!Number.isFinite(v))){$('challenge-feedback').textContent='세 좌표를 모두 숫자, 소수 또는 분수로 입력해 주세요.';$('challenge-feedback').classList.add('error');return;}
+    const correct=values.map((v,i)=>approxEqual(v,P[i]));inputs.forEach((f,i)=>{f.classList.toggle('correct',correct[i]);f.classList.toggle('incorrect',!correct[i])});
+    const all=correct.every(Boolean);$('challenge-feedback').textContent=all?'정답입니다! 그림에서 P의 위치를 확인해 보세요.':`다시 확인해 보세요. 맞은 좌표: ${correct.filter(Boolean).length}/3`;$('challenge-feedback').classList.toggle('error',!all);
+    challengeRevealed=true;$('challenge-visual-message').textContent='점 P와 정사영이 표시되었습니다.';$('challenge-solution').textContent=`정답 P = ${pointText(P)} · A에서 B까지 ${formatted(q.m/(q.m+q.n))}만큼 이동`;$('challenge-solution').hidden=false;render();
+  });
+  ['guess-x','guess-y','guess-z'].forEach(id=>$(id).addEventListener('keydown',event=>{if(event.key==='Enter')$('check-answer').click()}));
+
+  function render(){
+    updateText();
+    drawScene(canvases.explore,state.A,state.B,state.m,state.n);
+    drawScene(canvases.manipulate,state.A,state.B,state.m,state.n);
+    const q=currentChallenge();drawScene(canvases.challenge,q.A,q.B,q.m,q.n,{showP:challengeRevealed,showProjection:challengeRevealed});
+  }
+  const observer=new ResizeObserver(()=>render());Object.values(canvases).forEach(c=>observer.observe(c));
+  showChallenge();syncSlider();render();
+})();
+
+</script>
+</body>
+</html>
+
