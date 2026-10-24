@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#0F1B3C"/>
+  <meta name="apple-mobile-web-app-title" content="WebTool 모음"/>
   <title>WebTool 모음 — 수업 &amp; 업무용 웹툴</title>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <link rel="icon" type="image/svg+xml" href="icon.svg"/>
+  <link rel="apple-touch-icon" href="icon-192.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
@@ -1512,6 +1517,11 @@ function startApp() {
 }
 window.addEventListener('firebase-ready', startApp);
 if (window.firestoreApi) startApp();
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(err => console.warn('서비스 워커 등록 실패:', err));
+  });
+}
 </script>
 </body>
 </html>
