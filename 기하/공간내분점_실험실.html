@@ -18,6 +18,7 @@ main{padding:30px clamp(18px,3vw,46px) 26px}.section-heading{display:flex;align-
 @media(max-width:800px){.app-header{align-items:stretch;flex-direction:column;padding:15px 16px}.mode-nav{width:100%}.mode-button{flex:1;padding:9px 6px;font-size:13px}main{padding:20px 14px}.section-heading{display:block}.section-heading p{margin-top:8px}.explore-grid,.manipulate-grid,.challenge-layout{grid-template-columns:1fr}.result-panel{grid-column:auto}.input-panel{order:1}.plot-panel{order:2}.result-panel{order:3}.canvas-wrap{min-height:310px}.canvas-wrap.large{min-height:345px}.large-plot-panel{min-height:450px}.challenge-card,.challenge-visual{min-height:auto}.challenge-question{font-size:20px}.coordinate-steps{display:block}}
 @media(max-width:420px){.brand strong{font-size:17px}.brand small{font-size:11px}.section-heading h1{font-size:24px}.panel{border-radius:14px}.input-panel,.result-panel,.manipulate-side,.challenge-card,.challenge-visual{padding:17px}.canvas-wrap{min-height:260px}.canvas-wrap.large{min-height:290px}.challenge-answer{gap:4px}.challenge-answer label{width:55px}.challenge-answer input{font-size:17px;padding:8px 3px}.coordinate-steps div{white-space:normal}}
 .projection-summary{padding:11px 12px;margin:-5px 0 18px;border-radius:11px;background:#f4f8fc;color:#526a82;font-size:12px;line-height:1.5}.projection-summary strong,.manipulate-projection-summary strong{display:block;color:#235b91;font-size:12px;margin-bottom:5px}.projection-summary span{display:block;white-space:nowrap}.manipulate-projection-summary{margin-top:17px;padding:11px 12px;border-radius:10px;background:#f4f8fc;color:#526a82;font-size:12px;line-height:1.5}.manipulate-projection-summary span{display:block}
+.view-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid #e5ebf3;padding:10px 0}.zoom-control{display:flex;align-items:center;gap:10px;min-width:145px;color:#64768a;font-size:12px;font-weight:700}.zoom-control input{width:125px;min-width:95px;cursor:ew-resize}.view-buttons{display:flex;align-items:center;gap:5px}.view-buttons span{color:#8291a2;font-size:12px;font-weight:700;margin-right:3px}.view-buttons .quiet-button{padding:6px 9px}.large-plot-panel .view-controls{margin-top:auto}
 
 </style>
 </head>
@@ -48,8 +49,9 @@ main{padding:30px clamp(18px,3vw,46px) 26px}.section-heading{display:flex;align-
           </aside>
 
           <div class="panel plot-panel">
-            <div class="plot-header"><div><h2>좌표공간</h2><p>빈 공간을 드래그하면 시점이 회전합니다.</p></div><button type="button" class="icon-button" data-reset-view title="시점 초기화" aria-label="시점 초기화">↺</button></div>
+            <div class="plot-header"><div><h2>좌표공간</h2><p>빈 공간 드래그: 회전 · 크기 조절 손잡이 드래그: 확대·축소</p></div><button type="button" class="icon-button" data-reset-view title="시점 초기화" aria-label="시점 초기화">↺</button></div>
             <div class="canvas-wrap"><canvas id="explore-canvas" aria-label="좌표공간의 두 점 A, B와 내분점 P를 나타낸 그림"></canvas></div>
+            <div class="view-controls"><label class="zoom-control">크기 <input type="range" min="50" max="200" value="100" step="5" data-zoom aria-label="좌표공간 크기 드래그 조절"></label><div class="view-buttons" role="group" aria-label="좌표평면 정면 보기"><span>정면 보기</span><button type="button" class="quiet-button" data-view="xy">xy</button><button type="button" class="quiet-button" data-view="yz">yz</button><button type="button" class="quiet-button" data-view="xz">xz</button></div></div>
             <div class="plane-controls" role="group" aria-label="정사영 평면과 좌표축"><span>정사영</span><button type="button" class="plane-button active" data-plane="xy">xy평면</button><button type="button" class="plane-button" data-plane="yz">yz평면</button><button type="button" class="plane-button" data-plane="xz">xz평면</button><button type="button" class="plane-button" data-plane="x">x축</button><button type="button" class="plane-button" data-plane="y">y축</button><button type="button" class="plane-button" data-plane="z">z축</button><button type="button" class="plane-button" data-plane="none">끄기</button></div>
           </div>
 
@@ -59,7 +61,7 @@ main{padding:30px clamp(18px,3vw,46px) 26px}.section-heading{display:flex;align-
 
       <section id="manipulate" class="mode-panel" aria-labelledby="manipulate-title" hidden>
         <div class="section-heading"><div><span class="eyebrow">직접 조작</span><h1 id="manipulate-title">선분 위의 P를 움직여 보기</h1></div><p>초록색 P를 드래그하거나 아래 슬라이더를 움직이세요.</p></div>
-        <div class="manipulate-grid"><div class="panel large-plot-panel"><div class="plot-header"><div><h2>AP : PB = <span id="drag-ratio">1 : 3</span></h2><p>점 P를 드래그 · 빈 공간을 드래그하면 도형이 그 방향으로 회전합니다.</p></div><button type="button" class="icon-button" data-reset-view title="시점 초기화" aria-label="시점 초기화">↺</button></div><div class="canvas-wrap large"><canvas id="manipulate-canvas" aria-label="마우스나 손가락으로 내분점 P를 움직일 수 있는 좌표공간 그림"></canvas></div></div><aside class="panel manipulate-side"><h2>선분 위 위치</h2><div class="slider-labels"><span>A에 가까움</span><strong id="position-percent">25%</strong><span>B에 가까움</span></div><input id="position-slider" type="range" min="1" max="39" value="10" aria-label="점 P의 선분 위 위치"><div class="detail-pair"><span>내분비</span><strong id="manipulate-ratio">1 : 3</strong></div><div class="detail-pair"><span>P의 좌표</span><strong id="manipulate-point">(2, 5/2, 2)</strong></div><div class="rule"></div><h3>정사영 비교</h3><div class="stacked-buttons" role="group" aria-label="정사영 평면과 좌표축"><button type="button" class="plane-button active" data-plane="xy">xy평면</button><button type="button" class="plane-button" data-plane="yz">yz평면</button><button type="button" class="plane-button" data-plane="xz">xz평면</button><button type="button" class="plane-button" data-plane="x">x축</button><button type="button" class="plane-button" data-plane="y">y축</button><button type="button" class="plane-button" data-plane="z">z축</button><button type="button" class="plane-button" data-plane="none">끄기</button></div><div id="manipulate-projection-summary" class="manipulate-projection-summary"></div><p class="support-text">점 A, B의 좌표는 탐색 화면에서 바꿀 수 있습니다.</p></aside></div>
+        <div class="manipulate-grid"><div class="panel large-plot-panel"><div class="plot-header"><div><h2>AP : PB = <span id="drag-ratio">1 : 3</span></h2><p>점 P 드래그: 내분비 변경 · 빈 공간 드래그: 회전 · 크기 손잡이 드래그: 확대·축소</p></div><button type="button" class="icon-button" data-reset-view title="시점 초기화" aria-label="시점 초기화">↺</button></div><div class="canvas-wrap large"><canvas id="manipulate-canvas" aria-label="마우스나 손가락으로 내분점 P를 움직일 수 있는 좌표공간 그림"></canvas></div><div class="view-controls"><label class="zoom-control">크기 <input type="range" min="50" max="200" value="100" step="5" data-zoom aria-label="좌표공간 크기 드래그 조절"></label><div class="view-buttons" role="group" aria-label="좌표평면 정면 보기"><span>정면 보기</span><button type="button" class="quiet-button" data-view="xy">xy</button><button type="button" class="quiet-button" data-view="yz">yz</button><button type="button" class="quiet-button" data-view="xz">xz</button></div></div></div><aside class="panel manipulate-side"><h2>선분 위 위치</h2><div class="slider-labels"><span>A에 가까움</span><strong id="position-percent">25%</strong><span>B에 가까움</span></div><input id="position-slider" type="range" min="1" max="39" value="10" aria-label="점 P의 선분 위 위치"><div class="detail-pair"><span>내분비</span><strong id="manipulate-ratio">1 : 3</strong></div><div class="detail-pair"><span>P의 좌표</span><strong id="manipulate-point">(2, 5/2, 2)</strong></div><div class="rule"></div><h3>정사영 비교</h3><div class="stacked-buttons" role="group" aria-label="정사영 평면과 좌표축"><button type="button" class="plane-button active" data-plane="xy">xy평면</button><button type="button" class="plane-button" data-plane="yz">yz평면</button><button type="button" class="plane-button" data-plane="xz">xz평면</button><button type="button" class="plane-button" data-plane="x">x축</button><button type="button" class="plane-button" data-plane="y">y축</button><button type="button" class="plane-button" data-plane="z">z축</button><button type="button" class="plane-button" data-plane="none">끄기</button></div><div id="manipulate-projection-summary" class="manipulate-projection-summary"></div><p class="support-text">점 A, B의 좌표는 탐색 화면에서 바꿀 수 있습니다.</p></aside></div>
       </section>
 
       <section id="challenge" class="mode-panel" aria-labelledby="challenge-title" hidden>
@@ -73,7 +75,7 @@ main{padding:30px clamp(18px,3vw,46px) 26px}.section-heading{display:flex;align-
 (() => {
   'use strict';
 
-  const state = { A:[1,2,1], B:[5,4,5], m:1, n:3, plane:'xy', yaw:2.22, elevation:0.72, mode:'explore' };
+  const state = { A:[1,2,1], B:[5,4,5], m:1, n:3, plane:'xy', yaw:2.22, elevation:0.72, zoom:1, mode:'explore' };
   const defaults = { yaw:2.22, elevation:0.72 };
   const fields = ['ax','ay','az','bx','by','bz','ratio-m','ratio-n'].map(id => document.getElementById(id));
   const canvases = {
@@ -142,6 +144,15 @@ main{padding:30px clamp(18px,3vw,46px) 26px}.section-heading{display:flex;align-
   }));
   document.querySelectorAll('.plane-button').forEach(button=>button.addEventListener('click',()=>{state.plane=button.dataset.plane;document.querySelectorAll('.plane-button').forEach(b=>b.classList.toggle('active',b.dataset.plane===state.plane));render()}));
   document.querySelectorAll('[data-reset-view]').forEach(button=>button.addEventListener('click',()=>{state.yaw=defaults.yaw;state.elevation=defaults.elevation;render()}));
+  document.querySelectorAll('[data-zoom]').forEach(slider=>slider.addEventListener('input',()=>{
+    state.zoom=Number(slider.value)/100;
+    document.querySelectorAll('[data-zoom]').forEach(other=>{other.value=slider.value});
+    render();
+  }));
+  document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>{
+    const views={xy:{yaw:0,elevation:Math.PI/2},yz:{yaw:Math.PI/2,elevation:0},xz:{yaw:0,elevation:0}};
+    Object.assign(state,views[button.dataset.view]);render();
+  }));
 
   function updateText() {
     const P=internalPoint(state.A,state.B,state.m,state.n);
@@ -179,13 +190,14 @@ main{padding:30px clamp(18px,3vw,46px) 26px}.section-heading{display:flex;align-
     const L=clamp(Math.ceil(Math.max(4,...A.map(Math.abs),...B.map(Math.abs)))+1,5,12);
     const e=state.elevation,y=state.yaw;
     const raw=point=>({x:Math.cos(y)*point[0]+Math.sin(y)*point[1],y:-(-Math.sin(e)*Math.sin(y)*point[0]+Math.sin(e)*Math.cos(y)*point[1]+Math.cos(e)*point[2])});
-    const sample=[[0,0,0],A,B,P,[L,0,0],[0,L,0],[0,0,L],[-L*.35,0,0],[0,-L*.35,0],[-L*.35,-L*.35,0],[L,-L*.35,0],[L,L,0],[-L*.35,L,0]].map(raw);
-    const xs=sample.map(v=>v.x),ys=sample.map(v=>v.y);
-    const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
-    const scale=Math.min((w-86)/(maxX-minX||1),(h-70)/(maxY-minY||1));
-    const centerX=(minX+maxX)/2,centerY=(minY+maxY)/2;
-    const project=point=>{const q=raw(point);return {x:w/2+(q.x-centerX)*scale,y:h/2+(q.y-centerY)*scale}};
-    return {project,L};
+    const lo=-L*.35,hi=L;
+    const sample=[A,B,P,[0,0,0]];
+    for(const x of [lo,hi])for(const y of [lo,hi])for(const z of [lo,hi])sample.push([x,y,z]);
+    const center=[0,1,2].map(i=>(Math.min(...sample.map(p=>p[i]))+Math.max(...sample.map(p=>p[i])))/2);
+    const radius=Math.max(...sample.map(p=>Math.hypot(...p.map((v,i)=>v-center[i]))));
+    const scale=Math.min((w-86)/(2*radius),(h-70)/(2*radius))*state.zoom;
+    const project=point=>{const q=raw(point),c=raw(center);return {x:w/2+(q.x-c.x)*scale,y:h/2+(q.y-c.y)*scale}};
+    return {project,L,scale};
   }
   function line(ctx,a,b,color,width=1,dash=[]) {ctx.save();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.restore();}
   function dot(ctx,point,color,r=6){ctx.beginPath();ctx.arc(point.x,point.y,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();}
@@ -241,7 +253,7 @@ main{padding:30px clamp(18px,3vw,46px) 26px}.section-heading{display:flex;align-
         const g=drawScene(canvas,state.A,state.B,state.m,state.n);if(!g)return;
         const vx=g.Bp.x-g.Ap.x,vy=g.Bp.y-g.Ap.y,den=vx*vx+vy*vy;
         if(den>1){const t=clamp(((x-g.Ap.x)*vx+(y-g.Ap.y)*vy)/den,.025,.975);setRatioFromStep(t*40);}
-      } else {state.yaw=active.startYaw-(x-active.x)*.008;state.elevation=clamp(active.startElevation+(y-active.y)*.006,.18,1.32);render();}
+      } else {state.yaw=active.startYaw-(x-active.x)*.008;state.elevation=clamp(active.startElevation+(y-active.y)*.006,-Math.PI/2,Math.PI/2);render();}
     });
     const stop=()=>pointerState.delete(canvas);canvas.addEventListener('pointerup',stop);canvas.addEventListener('pointercancel',stop);canvas.addEventListener('lostpointercapture',stop);
   }
