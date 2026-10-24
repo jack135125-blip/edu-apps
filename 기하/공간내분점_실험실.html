@@ -17,6 +17,7 @@ main{padding:30px clamp(18px,3vw,46px) 26px}.section-heading{display:flex;align-
 @media(max-width:1200px){.explore-grid{grid-template-columns:minmax(220px,280px) minmax(350px,1fr)}.result-panel{grid-column:1/-1}.coordinate-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.result-highlight{max-width:300px}.challenge-layout{grid-template-columns:1fr 1fr}}
 @media(max-width:800px){.app-header{align-items:stretch;flex-direction:column;padding:15px 16px}.mode-nav{width:100%}.mode-button{flex:1;padding:9px 6px;font-size:13px}main{padding:20px 14px}.section-heading{display:block}.section-heading p{margin-top:8px}.explore-grid,.manipulate-grid,.challenge-layout{grid-template-columns:1fr}.result-panel{grid-column:auto}.input-panel{order:1}.plot-panel{order:2}.result-panel{order:3}.canvas-wrap{min-height:310px}.canvas-wrap.large{min-height:345px}.large-plot-panel{min-height:450px}.challenge-card,.challenge-visual{min-height:auto}.challenge-question{font-size:20px}.coordinate-steps{display:block}}
 @media(max-width:420px){.brand strong{font-size:17px}.brand small{font-size:11px}.section-heading h1{font-size:24px}.panel{border-radius:14px}.input-panel,.result-panel,.manipulate-side,.challenge-card,.challenge-visual{padding:17px}.canvas-wrap{min-height:260px}.canvas-wrap.large{min-height:290px}.challenge-answer{gap:4px}.challenge-answer label{width:55px}.challenge-answer input{font-size:17px;padding:8px 3px}.coordinate-steps div{white-space:normal}}
+.projection-summary{padding:11px 12px;margin:-5px 0 18px;border-radius:11px;background:#f4f8fc;color:#526a82;font-size:12px;line-height:1.5}.projection-summary strong,.manipulate-projection-summary strong{display:block;color:#235b91;font-size:12px;margin-bottom:5px}.projection-summary span{display:block;white-space:nowrap}.manipulate-projection-summary{margin-top:17px;padding:11px 12px;border-radius:10px;background:#f4f8fc;color:#526a82;font-size:12px;line-height:1.5}.manipulate-projection-summary span{display:block}
 
 </style>
 </head>
@@ -49,16 +50,16 @@ main{padding:30px clamp(18px,3vw,46px) 26px}.section-heading{display:flex;align-
           <div class="panel plot-panel">
             <div class="plot-header"><div><h2>좌표공간</h2><p>빈 공간을 드래그하면 시점이 회전합니다.</p></div><button type="button" class="icon-button" data-reset-view title="시점 초기화" aria-label="시점 초기화">↺</button></div>
             <div class="canvas-wrap"><canvas id="explore-canvas" aria-label="좌표공간의 두 점 A, B와 내분점 P를 나타낸 그림"></canvas></div>
-            <div class="plane-controls" role="group" aria-label="정사영 평면"><span>정사영</span><button type="button" class="plane-button active" data-plane="xy">xy평면</button><button type="button" class="plane-button" data-plane="yz">yz평면</button><button type="button" class="plane-button" data-plane="xz">xz평면</button><button type="button" class="plane-button" data-plane="none">끄기</button></div>
+            <div class="plane-controls" role="group" aria-label="정사영 평면과 좌표축"><span>정사영</span><button type="button" class="plane-button active" data-plane="xy">xy평면</button><button type="button" class="plane-button" data-plane="yz">yz평면</button><button type="button" class="plane-button" data-plane="xz">xz평면</button><button type="button" class="plane-button" data-plane="x">x축</button><button type="button" class="plane-button" data-plane="y">y축</button><button type="button" class="plane-button" data-plane="z">z축</button><button type="button" class="plane-button" data-plane="none">끄기</button></div>
           </div>
 
-          <aside class="panel result-panel" aria-live="polite"><div class="panel-title"><h2>계산과 연결</h2><span class="mini-label">실시간 갱신</span></div><div class="result-intro">P는 A에서 B까지 <strong id="fraction-progress">1/4</strong>만큼 이동한 점입니다.</div><div class="result-highlight"><span>내분점 P</span><strong id="point-result">(2, 5/2, 2)</strong></div><div class="step-list"><div class="step"><span>1</span><p>정사영해도 선분의 내분비는 같습니다.</p></div><div class="step"><span>2</span><p>각 좌표에 같은 내분점 공식을 적용합니다.</p></div></div><div class="general-formula">P = <span class="formula-group">(<span class="fraction"><span>nx₁ + mx₂</span><span>m + n</span></span>, <span class="fraction"><span>ny₁ + my₂</span><span>m + n</span></span>, <span class="fraction"><span>nz₁ + mz₂</span><span>m + n</span></span>)</span></div><div id="coordinate-steps" class="coordinate-steps"></div></aside>
+          <aside class="panel result-panel" aria-live="polite"><div class="panel-title"><h2>계산과 연결</h2><span class="mini-label">실시간 갱신</span></div><div class="result-intro">P는 A에서 B까지 <strong id="fraction-progress">1/4</strong>만큼 이동한 점입니다.</div><div class="result-highlight"><span>내분점 P</span><strong id="point-result">(2, 5/2, 2)</strong></div><div id="projection-summary" class="projection-summary"></div><div class="step-list"><div class="step"><span>1</span><p>정사영해도 선분의 내분비는 같습니다.</p></div><div class="step"><span>2</span><p>각 좌표에 같은 내분점 공식을 적용합니다.</p></div></div><div class="general-formula">P = <span class="formula-group">(<span class="fraction"><span>nx₁ + mx₂</span><span>m + n</span></span>, <span class="fraction"><span>ny₁ + my₂</span><span>m + n</span></span>, <span class="fraction"><span>nz₁ + mz₂</span><span>m + n</span></span>)</span></div><div id="coordinate-steps" class="coordinate-steps"></div></aside>
         </div>
       </section>
 
       <section id="manipulate" class="mode-panel" aria-labelledby="manipulate-title" hidden>
         <div class="section-heading"><div><span class="eyebrow">직접 조작</span><h1 id="manipulate-title">선분 위의 P를 움직여 보기</h1></div><p>초록색 P를 드래그하거나 아래 슬라이더를 움직이세요.</p></div>
-        <div class="manipulate-grid"><div class="panel large-plot-panel"><div class="plot-header"><div><h2>AP : PB = <span id="drag-ratio">1 : 3</span></h2><p>점 P를 드래그 · 빈 공간을 드래그해 시점 회전</p></div><button type="button" class="icon-button" data-reset-view title="시점 초기화" aria-label="시점 초기화">↺</button></div><div class="canvas-wrap large"><canvas id="manipulate-canvas" aria-label="마우스나 손가락으로 내분점 P를 움직일 수 있는 좌표공간 그림"></canvas></div></div><aside class="panel manipulate-side"><h2>선분 위 위치</h2><div class="slider-labels"><span>A에 가까움</span><strong id="position-percent">25%</strong><span>B에 가까움</span></div><input id="position-slider" type="range" min="1" max="39" value="10" aria-label="점 P의 선분 위 위치"><div class="detail-pair"><span>내분비</span><strong id="manipulate-ratio">1 : 3</strong></div><div class="detail-pair"><span>P의 좌표</span><strong id="manipulate-point">(2, 5/2, 2)</strong></div><div class="rule"></div><h3>정사영 비교</h3><div class="stacked-buttons" role="group" aria-label="정사영 평면"><button type="button" class="plane-button active" data-plane="xy">xy평면</button><button type="button" class="plane-button" data-plane="yz">yz평면</button><button type="button" class="plane-button" data-plane="xz">xz평면</button><button type="button" class="plane-button" data-plane="none">끄기</button></div><p class="support-text">점 A, B의 좌표는 탐색 화면에서 바꿀 수 있습니다.</p></aside></div>
+        <div class="manipulate-grid"><div class="panel large-plot-panel"><div class="plot-header"><div><h2>AP : PB = <span id="drag-ratio">1 : 3</span></h2><p>점 P를 드래그 · 빈 공간을 드래그하면 도형이 그 방향으로 회전합니다.</p></div><button type="button" class="icon-button" data-reset-view title="시점 초기화" aria-label="시점 초기화">↺</button></div><div class="canvas-wrap large"><canvas id="manipulate-canvas" aria-label="마우스나 손가락으로 내분점 P를 움직일 수 있는 좌표공간 그림"></canvas></div></div><aside class="panel manipulate-side"><h2>선분 위 위치</h2><div class="slider-labels"><span>A에 가까움</span><strong id="position-percent">25%</strong><span>B에 가까움</span></div><input id="position-slider" type="range" min="1" max="39" value="10" aria-label="점 P의 선분 위 위치"><div class="detail-pair"><span>내분비</span><strong id="manipulate-ratio">1 : 3</strong></div><div class="detail-pair"><span>P의 좌표</span><strong id="manipulate-point">(2, 5/2, 2)</strong></div><div class="rule"></div><h3>정사영 비교</h3><div class="stacked-buttons" role="group" aria-label="정사영 평면과 좌표축"><button type="button" class="plane-button active" data-plane="xy">xy평면</button><button type="button" class="plane-button" data-plane="yz">yz평면</button><button type="button" class="plane-button" data-plane="xz">xz평면</button><button type="button" class="plane-button" data-plane="x">x축</button><button type="button" class="plane-button" data-plane="y">y축</button><button type="button" class="plane-button" data-plane="z">z축</button><button type="button" class="plane-button" data-plane="none">끄기</button></div><div id="manipulate-projection-summary" class="manipulate-projection-summary"></div><p class="support-text">점 A, B의 좌표는 탐색 화면에서 바꿀 수 있습니다.</p></aside></div>
       </section>
 
       <section id="challenge" class="mode-panel" aria-labelledby="challenge-title" hidden>
@@ -152,6 +153,17 @@ main{padding:30px clamp(18px,3vw,46px) 26px}.section-heading{display:flex;align-
     $('position-percent').textContent=`${Math.round(100*state.m/(state.m+state.n))}%`;
     const labels=['x','y','z'];
     $('coordinate-steps').innerHTML=labels.map((label,i)=>`<div><strong>${label}</strong> = (${formatted(state.n)}×${formatted(state.A[i])} + ${formatted(state.m)}×${formatted(state.B[i])}) ÷ ${formatted(state.m+state.n)} = <strong>${formatted(P[i])}</strong></div>`).join('');
+    const names={xy:'xy평면',yz:'yz평면',xz:'xz평면',x:'x축',y:'y축',z:'z축'};
+    if(state.plane==='none'){
+      $('projection-summary').innerHTML='<strong>정사영 표시 꺼짐</strong>';
+      $('manipulate-projection-summary').innerHTML='<strong>정사영 표시 꺼짐</strong>';
+    }else{
+      const axis=state.plane.length===1;
+      const heading=axis?`${names[state.plane]} 위 수선의 발`:`${names[state.plane]}으로의 정사영`;
+      const rows=[['A',state.A],['B',state.B],['P',P]].map(([name,point])=>`<span>${name}′ = ${pointText(projectedFoot(point,state.plane))}</span>`).join('');
+      $('projection-summary').innerHTML=`<strong>${heading}</strong>${rows}`;
+      $('manipulate-projection-summary').innerHTML=`<strong>${heading}</strong><span>P′ = ${pointText(projectedFoot(P,state.plane))}</span>`;
+    }
   }
 
   function setupCanvas(canvas) {
@@ -179,23 +191,33 @@ main{padding:30px clamp(18px,3vw,46px) 26px}.section-heading{display:flex;align-
   function dot(ctx,point,color,r=6){ctx.beginPath();ctx.arc(point.x,point.y,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();}
   function label(ctx,text,point,dx,dy,color='#24364a'){ctx.font='700 13px "Malgun Gothic",system-ui,sans-serif';ctx.fillStyle=color;ctx.fillText(text,point.x+dx,point.y+dy);}
   function arrow(ctx,a,b,color){line(ctx,a,b,color,1.8);const angle=Math.atan2(b.y-a.y,b.x-a.x);const len=8;ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x-len*Math.cos(angle-.42),b.y-len*Math.sin(angle-.42));ctx.lineTo(b.x-len*Math.cos(angle+.42),b.y-len*Math.sin(angle+.42));ctx.closePath();ctx.fill();}
-  function projectedToPlane(point,plane){return plane==='xy'?[point[0],point[1],0]:plane==='yz'?[0,point[1],point[2]]:[point[0],0,point[2]];}
+  function projectedFoot(point,mode){
+    if(mode==='xy')return [point[0],point[1],0];
+    if(mode==='yz')return [0,point[1],point[2]];
+    if(mode==='xz')return [point[0],0,point[2]];
+    if(mode==='x')return [point[0],0,0];
+    if(mode==='y')return [0,point[1],0];
+    return [0,0,point[2]];
+  }
   function drawScene(canvas,A,B,m,n,{showP=true,showProjection=true}={}){
     const surface=setupCanvas(canvas);if(!surface)return null;
     const {ctx,w,h}=surface,P=internalPoint(A,B,m,n),{project,L}=makeProjector(w,h,A,B,P);
     const O=project([0,0,0]), Ap=project(A),Bp=project(B),Pp=project(P);
     ctx.lineJoin='round';ctx.lineCap='round';
-    if(showProjection&&state.plane!=='none'){
-      const plane=state.plane;
-      const extent=[-L*.35,L];
-      const corners=plane==='xy'?[[extent[0],extent[0],0],[extent[1],extent[0],0],[extent[1],extent[1],0],[extent[0],extent[1],0]]:plane==='yz'?[[0,extent[0],extent[0]],[0,extent[1],extent[0]],[0,extent[1],extent[1]],[0,extent[0],extent[1]]]:[[extent[0],0,extent[0]],[extent[1],0,extent[0]],[extent[1],0,extent[1]],[extent[0],0,extent[1]]];
-      ctx.beginPath();corners.map(project).forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.closePath();ctx.fillStyle='rgba(48,144,209,.075)';ctx.fill();ctx.strokeStyle='rgba(77,140,184,.22)';ctx.lineWidth=1;ctx.stroke();
-      for(const v of [A,B,...(showP?[P]:[])])line(ctx,project(v),project(projectedToPlane(v,plane)),'#a8b5c4',1.25,[5,5]);
-      for(const v of [A,B,...(showP?[P]:[])])dot(ctx,project(projectedToPlane(v,plane)),'#a7bfd0',3.5);
-      const caption=plane==='xy'?'xy평면':plane==='yz'?'yz평면':'xz평면';label(ctx,caption,project(corners[2]),6,-8,'#6595b8');
+    const mode=state.plane,showFeet=showProjection&&mode!=='none';
+    const feet=showFeet?[{name:'A′',point:A,color:'#e9893f'},{name:'B′',point:B,color:'#247bd0'},...(showP?[{name:'P′',point:P,color:'#168d69'}]:[])].map(item=>({...item,foot:projectedFoot(item.point,mode)})):[];
+    if(showFeet){
+      if(mode.length===2){
+        const extent=[-L*.35,L];
+        const corners=mode==='xy'?[[extent[0],extent[0],0],[extent[1],extent[0],0],[extent[1],extent[1],0],[extent[0],extent[1],0]]:mode==='yz'?[[0,extent[0],extent[0]],[0,extent[1],extent[0]],[0,extent[1],extent[1]],[0,extent[0],extent[1]]]:[[extent[0],0,extent[0]],[extent[1],0,extent[0]],[extent[1],0,extent[1]],[extent[0],0,extent[1]]];
+        ctx.beginPath();corners.map(project).forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.closePath();ctx.fillStyle='rgba(48,144,209,.075)';ctx.fill();ctx.strokeStyle='rgba(77,140,184,.22)';ctx.lineWidth=1;ctx.stroke();
+        label(ctx,`${mode}평면`,project(corners[2]),6,-8,'#6595b8');
+      }
+      feet.forEach(item=>line(ctx,project(item.point),project(item.foot),'#91a4b7',1.5,[5,5]));
     }
     arrow(ctx,O,project([L,0,0]),'#73859a');arrow(ctx,O,project([0,L,0]),'#73859a');arrow(ctx,O,project([0,0,L]),'#73859a');
     label(ctx,'O',O,-16,16);label(ctx,'x',project([L,0,0]),6,3);label(ctx,'y',project([0,L,0]),7,3);label(ctx,'z',project([0,0,L]),5,-6);
+    feet.forEach(item=>{const q=project(item.foot);dot(ctx,q,item.color,4.5);label(ctx,item.name,q,6,-8,item.color)});
     line(ctx,Ap,Bp,'#277bd0',3.5);
     dot(ctx,Ap,'#e9893f',7);dot(ctx,Bp,'#247bd0',7);
     label(ctx,`A ${vectorText(A)}`,Ap,-4,-14);label(ctx,`B ${vectorText(B)}`,Bp,8,-10);
@@ -219,7 +241,7 @@ main{padding:30px clamp(18px,3vw,46px) 26px}.section-heading{display:flex;align-
         const g=drawScene(canvas,state.A,state.B,state.m,state.n);if(!g)return;
         const vx=g.Bp.x-g.Ap.x,vy=g.Bp.y-g.Ap.y,den=vx*vx+vy*vy;
         if(den>1){const t=clamp(((x-g.Ap.x)*vx+(y-g.Ap.y)*vy)/den,.025,.975);setRatioFromStep(t*40);}
-      } else {state.yaw=active.startYaw+(x-active.x)*.008;state.elevation=clamp(active.startElevation-(y-active.y)*.006,.18,1.32);render();}
+      } else {state.yaw=active.startYaw-(x-active.x)*.008;state.elevation=clamp(active.startElevation+(y-active.y)*.006,.18,1.32);render();}
     });
     const stop=()=>pointerState.delete(canvas);canvas.addEventListener('pointerup',stop);canvas.addEventListener('pointercancel',stop);canvas.addEventListener('lostpointercapture',stop);
   }
