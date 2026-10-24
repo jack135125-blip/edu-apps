@@ -17,17 +17,28 @@
     .btn-edit-nav{background:transparent;color:#93C5FD;border:1.5px solid #334d80;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;}
     .btn-edit-nav:hover{background:#1e3a8a;color:#fff;border-color:#3B82F6;}
     .btn-edit-nav.active{background:#3B82F6;color:#fff;border-color:#3B82F6;}
-    .edit-banner{display:none;background:#1D4ED8;color:#fff;text-align:center;padding:8px 1rem;font-size:13px;font-weight:700;align-items:center;justify-content:center;gap:8px;}
+    .edit-banner{display:none;background:#1D4ED8;color:#fff;text-align:center;padding:8px 1rem;font-size:13px;font-weight:700;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
     .edit-banner.show{display:flex;}
-    .hero{background:linear-gradient(135deg,#0F1B3C 0%,#1E3A8A 60%,#1D4ED8 100%);padding:4rem 2rem 3rem;text-align:center;}
+    .hero{background:#06143c;padding:4.5rem 2rem 4rem;min-height:350px;display:flex;align-items:center;position:relative;isolation:isolate;overflow:hidden;}
+    .hero-bg{position:absolute;inset:0;background-position:center;background-size:cover;opacity:0;transition:opacity .45s ease;z-index:0;}
+    .hero-bg.all,.hero-bg.etc{background-image:url('hero-education.webp');}
+    .hero-bg.work{background-image:url('hero-work.webp');}
+    .hero-bg.class{background-image:url('hero-class.webp');}
+    .hero[data-category="all"] .hero-bg.all,.hero[data-category="work"] .hero-bg.work,.hero[data-category="class"] .hero-bg.class,.hero[data-category="etc"] .hero-bg.etc{opacity:1;}
+    .hero::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,20,60,.65),rgba(6,20,60,.06));z-index:1;pointer-events:none;}
+    .hero-content{width:100%;max-width:1080px;margin:0 auto;position:relative;z-index:2;}
     .hero-tag{display:inline-block;background:rgba(96,165,250,.2);color:#93C5FD;font-size:13px;font-weight:700;padding:4px 14px;border-radius:20px;margin-bottom:1rem;}
     .hero h1{font-size:36px;font-weight:800;color:#fff;line-height:1.3;margin-bottom:.75rem;}
     .hero h1 span{color:#60A5FA;}
-    .hero p{color:#BFDBFE;font-size:16px;max-width:520px;margin:0 auto 2rem;line-height:1.7;}
-    .search-wrap{display:flex;max-width:440px;margin:0 auto;background:#fff;border-radius:40px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.15);}
+    .hero p{color:#BFDBFE;font-size:16px;max-width:520px;margin:0 0 1.75rem;line-height:1.7;}
+    .search-wrap{display:flex;max-width:520px;margin:0;background:#fff;border-radius:40px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.15);}
     .search-wrap input{flex:1;border:none;padding:12px 20px;font-size:14px;font-family:'Nunito',sans-serif;outline:none;color:#1e3a5f;}
     .search-wrap button{background:#3B82F6;border:none;padding:12px 20px;cursor:pointer;color:#fff;font-size:18px;display:flex;align-items:center;transition:background .2s;}
     .search-wrap button:hover{background:#2563EB;}
+    .search-wrap .btn-clear-search{display:none;background:#fff;color:#64748b;padding:8px 10px;font-size:17px;}
+    .search-wrap .btn-clear-search.show{display:flex;}
+    .search-wrap .btn-clear-search:hover{background:#EFF6FF;color:#1D4ED8;}
+    .search-status{min-height:20px;margin-top:.75rem;color:#DBEAFE;font-size:13px;font-weight:700;}
     .body{padding:2.5rem 2rem;max-width:960px;margin:0 auto;}
     .stats{display:flex;gap:1rem;margin-bottom:2rem;flex-wrap:wrap;}
     .stat{background:#fff;border:.5px solid #BFDBFE;border-radius:12px;padding:.75rem 1.25rem;flex:1;min-width:120px;text-align:center;}
@@ -51,6 +62,8 @@
     .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;min-height:80px;position:relative;}
     body.edit-mode .grid:empty::after{content:'여기에 카드를 드래그하세요';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#94a3b8;font-size:13px;font-weight:600;pointer-events:none;}
     .card-wrap{position:relative;}
+    .card-drag-handle{display:none;position:absolute;left:50%;top:-10px;transform:translateX(-50%);z-index:3;background:#1D4ED8;color:#fff;border-radius:12px;padding:1px 9px;font-size:12px;line-height:18px;cursor:grab;box-shadow:0 2px 8px rgba(15,27,60,.22);}
+    body.edit-mode .card-drag-handle{display:block;}
     .card{background:#fff;border:.5px solid #BFDBFE;border-radius:14px;padding:1.1rem 1.25rem;text-decoration:none;display:block;transition:transform .18s,box-shadow .18s,border-color .18s;}
     .card:hover{transform:translateY(-3px);border-color:#3B82F6;box-shadow:0 6px 24px rgba(59,130,246,.15);}
     body.edit-mode .card{border-color:#93C5FD;cursor:pointer;}
@@ -124,6 +137,9 @@
     body.edit-mode .card-wrap{cursor:move;}
     .card-wrap.dragging{opacity:0.5;}
     .grid.drag-over{background:rgba(59,130,246,0.1);border:2px dashed #3B82F6;border-radius:12px;}
+    .card-wrap.drop-before{box-shadow:-4px 0 0 #2563EB;}
+    .card-wrap.drop-after{box-shadow:4px 0 0 #2563EB;}
+    button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #FBBF24;outline-offset:3px;}
     /* SUBCAT */
     .subcat-section{margin-left:2rem;margin-top:1.5rem;}
     .subcat-header{display:flex;align-items:center;gap:8px;margin-bottom:.75rem;}
@@ -149,9 +165,25 @@
     .done-screen h3{font-size:18px;font-weight:800;color:#0F1B3C;margin-bottom:.4rem;}
     .done-screen p{font-size:14px;color:#64748b;}
     @media(max-width:600px){
-      .hero h1{font-size:26px;}
+      nav{padding:0 1rem;}
+      .logo{font-size:15px;}
+      .nav-right{gap:.35rem;}
+      .btn-edit-nav,.btn-logout-nav{font-size:12px;padding:6px 9px;}
+      .hero{min-height:340px;padding:3rem 1.25rem;}
+      .hero-bg{background-position:65% center;}
+      .hero::after{background:linear-gradient(90deg,rgba(6,20,60,.95),rgba(6,20,60,.78));}
+      .hero h1{font-size:27px;}
+      .hero p{font-size:14px;}
+      .body{padding:1.5rem 1rem;}
+      .stats{gap:.6rem;margin-bottom:1.25rem;}
+      .filter-row{gap:6px;margin-bottom:1.5rem;}
+      .filter-btn{padding:6px 11px;}
+      .btn-add-card{margin-left:0;}
+      .grid{grid-template-columns:1fr;}
+      .modal{padding:1.5rem;}
       .field-row{grid-template-columns:1fr;}
     }
+    @media(prefers-reduced-motion:reduce){.hero-bg{transition:none;}}
   </style>
 </head>
 <body>
@@ -170,20 +202,25 @@
 
 <div class="edit-banner" id="editBanner">
   <i class="ti ti-pencil"></i>
-  편집 모드 — <strong style="margin:0 4px">카드 클릭</strong>으로 도구 수정 · <strong style="margin:0 4px">드래그</strong>로 순서 변경 · <strong style="margin:0 4px">🔒</strong> 비공개 · <strong style="margin:0 4px">✕</strong> 삭제
+  편집 모드 — 카드 클릭으로 수정 · 카드를 드래그해 순서 변경 · 🔒 비공개 · ✕ 삭제 <span id="saveStatus" role="status" aria-live="polite"></span>
 </div>
 
-<div class="hero">
+<div class="hero" id="hero" data-category="all">
+  <span class="hero-bg all" aria-hidden="true"></span>
+  <span class="hero-bg work" aria-hidden="true"></span>
+  <span class="hero-bg class" aria-hidden="true"></span>
+  <span class="hero-bg etc" aria-hidden="true"></span>
+  <div class="hero-content">
   <div class="hero-tag">✦ 창원여자고등학교 교사 Kim DH ✦</div>
-  <!--1. 일도 수업도, 이 한 페이지로 해결하세요. 이 부분을 '수업 업무용 웹앱, 프로그램 모음'으로 변경해줘-->
   <h1>웹 앱 & 프로그램 컬렉션</h1>
-  <!--아래의 업무 수업 그 외 모든 상황에 딱 맞는~ 이 부분 삭제해줘-->
-  <p> 웹앱 모음집 </p>
-  <!--검색창 삭제하지마. 추가한 웹앱, 프로그램 이름이나 기능으로 검색할 수 있도록 해줘 해주세요 -->   
+  <p>수업과 업무에 필요한 도구를 한곳에서 찾아보세요.</p>
   
   <div class="search-wrap">
-    <input type="text" id="searchInput" placeholder="웹앱, 프로그램 이름이나 기능으로 검색..."/>
-    <button onclick="doSearch()"><i class="ti ti-search"></i></button>
+    <input type="search" id="searchInput" aria-label="웹앱과 프로그램 검색" placeholder="이름이나 기능으로 검색..."/>
+    <button class="btn-clear-search" id="clearSearchBtn" onclick="clearSearch()" aria-label="검색어 지우기"><i class="ti ti-x"></i></button>
+    <button onclick="doSearch()" aria-label="검색"><i class="ti ti-search"></i></button>
+  </div>
+  <div class="search-status" id="searchStatus" role="status" aria-live="polite"></div>
   </div>
 </div>
 
@@ -529,7 +566,8 @@ function showOnly(id) {
 }
 
 // ── RENDER ────────────────────────────────────────────
-function render(filterCat='all', searchQ='') {
+function render(filterCat='all', searchQ=null) {
+  if (searchQ === null) searchQ = document.getElementById('searchInput').value.toLowerCase().trim();
   const wrap = document.getElementById('sections');
   wrap.innerHTML = '';
 
@@ -614,6 +652,8 @@ function render(filterCat='all', searchQ='') {
   document.getElementById('toolCount').textContent = tools.length;
   document.getElementById('catCount').textContent  = categories.length;
   document.getElementById('emptyState').style.display = totalVisible === 0 ? 'block' : 'none';
+  document.getElementById('searchStatus').textContent = searchQ ? `“${searchQ}” 검색 결과 ${totalVisible}개` : '';
+  document.getElementById('clearSearchBtn').classList.toggle('show', !!searchQ);
 }
 
 function setupGridDrop(grid) {
@@ -644,6 +684,11 @@ function makeCardEl(t) {
   if (editMode) {
     wrap.draggable = true;
   }
+
+  const dragHandle = document.createElement('span');
+  dragHandle.className = 'card-drag-handle';
+  dragHandle.setAttribute('aria-hidden', 'true');
+  dragHandle.innerHTML = '<i class="ti ti-grip-horizontal"></i>';
 
   const lockBtn = document.createElement('button');
   lockBtn.className = 'btn-lock';
@@ -695,6 +740,7 @@ function makeCardEl(t) {
     }
   });
 
+  wrap.appendChild(dragHandle);
   wrap.appendChild(lockBtn);
   wrap.appendChild(delBtn);
   wrap.appendChild(a);
@@ -737,6 +783,7 @@ function enterEditMode() {
   btn.classList.add('active');
   btn.innerHTML = '<i class="ti ti-x"></i> 편집 종료';
   document.getElementById('editBanner').classList.add('show');
+  render(_currentFilter);
 }
 
 function exitEditMode() {
@@ -746,10 +793,18 @@ function exitEditMode() {
   btn.classList.remove('active');
   btn.innerHTML = '<i class="ti ti-edit"></i> 도구 편집';
   document.getElementById('editBanner').classList.remove('show');
+  render(_currentFilter);
 }
 
 // ── 카드 드래그 앤 드롭 ───────────────────────────────
 let draggedToolId = null;
+let reorderSaving = false;
+
+function isAfterDrop(target, event, grid) {
+  const rect = target.getBoundingClientRect();
+  const columns = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+  return columns > 1 ? event.clientX > rect.left + rect.width / 2 : event.clientY > rect.top + rect.height / 2;
+}
 
 const SCROLL_EDGE_PX = 80;
 const SCROLL_MAX_SPEED = 16;
@@ -795,14 +850,14 @@ function stopCardDragAutoScroll() {
 }
 
 function handleCardDragStart(e) {
-  if (!editMode) {
+  if (!editMode || reorderSaving) {
     e.preventDefault();
     return;
   }
   draggedToolId = this.dataset.toolId;
   this.classList.add('dragging');
   e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/html', this.innerHTML);
+  e.dataTransfer.setData('text/plain', draggedToolId);
   startCardDragAutoScroll();
 }
 
@@ -810,6 +865,7 @@ function handleCardDragEnd(e) {
   stopCardDragAutoScroll();
   this.classList.remove('dragging');
   document.querySelectorAll('.grid').forEach(g => g.classList.remove('drag-over'));
+  document.querySelectorAll('.card-wrap').forEach(card => card.classList.remove('drop-before', 'drop-after'));
   draggedToolId = null;
 }
 
@@ -819,6 +875,12 @@ function handleGridDragOver(e) {
   lastDragClientY = e.clientY;
   e.dataTransfer.dropEffect = 'move';
   this.classList.add('drag-over');
+  document.querySelectorAll('.card-wrap').forEach(card => card.classList.remove('drop-before', 'drop-after'));
+  const target = e.target.closest('.card-wrap');
+  if (target && target.dataset.toolId !== draggedToolId) {
+    const after = isAfterDrop(target, e, this);
+    target.classList.add(after ? 'drop-after' : 'drop-before');
+  }
   return false;
 }
 
@@ -830,7 +892,9 @@ function handleGridDragLeave(e) {
 
 function handleGridDrop(e) {
   if (!editMode || !draggedToolId) return;
+  e.preventDefault();
   if (e.stopPropagation) e.stopPropagation();
+  stopCardDragAutoScroll();
   
   this.classList.remove('drag-over');
   
@@ -841,61 +905,43 @@ function handleGridDrop(e) {
   const tool = tools.find(t => t.id === draggedToolId);
   if (!tool) return;
   
-  // 같은 위치에 드롭한 경우 아무것도 하지 않음
-  if (tool.cat === targetCatId && (tool.subcat || null) === (targetSubcatId || null)) {
-    const dropTarget = e.target.closest('.card-wrap');
-    if (!dropTarget || dropTarget.dataset.toolId === draggedToolId) {
-      render(_currentFilter);
-      return false;
-    }
-  }
-  
-  // 카테고리/하위카테고리 변경
-  const oldCat = tool.cat;
-  const oldSubcat = tool.subcat;
+  const dropTarget = e.target.closest('.card-wrap');
+  if (dropTarget?.dataset.toolId === draggedToolId) return false;
+  const placeAfter = dropTarget && isAfterDrop(dropTarget, e, this);
+  const originalTools = tools.slice();
+  const draggedIndex = tools.findIndex(t => t.id === draggedToolId);
+  tools.splice(draggedIndex, 1);
   tool.cat = targetCatId;
   tool.subcat = targetSubcatId || null;
-  
-  // 도구 재배열: 드롭된 위치의 카드들 사이에 삽입
-  const dropTarget = e.target.closest('.card-wrap');
-  if (dropTarget && dropTarget.dataset.toolId !== draggedToolId) {
-    const draggedIndex = tools.findIndex(t => t.id === draggedToolId);
+
+  if (dropTarget) {
     const targetIndex = tools.findIndex(t => t.id === dropTarget.dataset.toolId);
-    
-    if (draggedIndex !== -1 && targetIndex !== -1) {
-      const [draggedTool] = tools.splice(draggedIndex, 1);
-      tools.splice(targetIndex, 0, draggedTool);
-    }
-  } else if (oldCat !== targetCatId || oldSubcat !== (targetSubcatId || null)) {
-    // 빈 그리드나 같은 카드가 아닌 곳에 드롭한 경우
-    // 해당 카테고리의 마지막으로 이동
-    const draggedIndex = tools.findIndex(t => t.id === draggedToolId);
-    if (draggedIndex !== -1) {
-      const [draggedTool] = tools.splice(draggedIndex, 1);
-      
-      // 같은 카테고리/하위카테고리의 마지막 아이템 뒤에 삽입
-      let lastIndex = -1;
-      for (let i = tools.length - 1; i >= 0; i--) {
-        if (tools[i].cat === targetCatId && (tools[i].subcat || null) === (targetSubcatId || null)) {
-          lastIndex = i;
-          break;
-        }
-      }
-      
-      if (lastIndex !== -1) {
-        tools.splice(lastIndex + 1, 0, draggedTool);
-      } else {
-        // 해당 카테고리에 아이템이 없으면 배열 끝에 추가
-        tools.push(draggedTool);
+    if (targetIndex !== -1) tools.splice(targetIndex + (placeAfter ? 1 : 0), 0, tool);
+  } else {
+    let lastIndex = -1;
+    for (let i = tools.length - 1; i >= 0; i--) {
+      if (tools[i].cat === targetCatId && (tools[i].subcat || null) === (targetSubcatId || null)) {
+        lastIndex = i;
+        break;
       }
     }
+    tools.splice(lastIndex === -1 ? tools.length : lastIndex + 1, 0, tool);
   }
-  
+  draggedToolId = null;
   render(_currentFilter);
-  persistAllTools().catch(err => {
+  const status = document.getElementById('saveStatus');
+  status.textContent = '· 저장 중…';
+  reorderSaving = true;
+  persistAllTools().then(() => {
+    status.textContent = '· 순서 저장됨';
+  }).catch(err => {
     console.error(err);
+    tools = originalTools;
     alert('변경 사항 저장에 실패했습니다.');
     loadDataFromFirestore();
+    status.textContent = '· 저장 실패';
+  }).finally(() => {
+    reorderSaving = false;
   });
   return false;
 }
@@ -1432,6 +1478,7 @@ function updateFilterBtns() {
 // ── 필터 ──────────────────────────────────────────────
 function filterCards(type, btn) {
   _currentFilter = type;
+  document.getElementById('hero').dataset.category = ['work','class','etc'].includes(type) ? type : 'all';
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   render(type);
@@ -1442,6 +1489,12 @@ function doSearch() {
   const q = document.getElementById('searchInput').value.toLowerCase().trim();
   render(_currentFilter, q);
 }
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  render(_currentFilter, '');
+  document.getElementById('searchInput').focus();
+}
+document.getElementById('searchInput').addEventListener('input', doSearch);
 document.getElementById('searchInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') doSearch();
 });
